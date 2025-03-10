@@ -56,6 +56,7 @@
 <div style="margin-top: 20px;">
     <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
 </div>
+<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
 
 <script>
     let selectedShip = { type: null, size: null };
@@ -380,5 +381,17 @@
 
     .bot-cell {
         background-color: lightgray;
+    }
+
+    .go_back {
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        background-color: red;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
     }
 </style>

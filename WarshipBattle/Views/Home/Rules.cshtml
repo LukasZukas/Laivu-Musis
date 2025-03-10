@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Rules";
+}
+<h1>RULES:</h1>
+<p style="color: black; font-size: 20px;">
+    ...<br>
+</p>
+
+<h1>TAISYKLĖS:</h1>
+<p style="color: black; font-size: 20px;">
+    Kiekvienas iš žaidėjų (kurių yra du), gauna dvi 10x10 dydžio lenteles:<br>
+    · pirmoji yra skirta savo laivams išdėstyti; <br>
+    · antroji, priešingai, yra naudojama žaidimo priešininku patapusio asmens laivų paieškai;<br>
+    Koordinates nustatyti neabejotinai padeda faktas, kad lentelės viršuje yra išdėstyti skaičiai nuo 1 iki 10, o kairėje pusėje – raidės nuo A iki J. <br>
+    Taigi, jei tam tikras žaidėjas norėtų pasirinkti langelį, esantį trečiame stulpelyje ir ketvirtoje eilutėje, to langelio koordinatės būtų D3. <br>
+    Laivų išdėstymas pakankamai paprastas: svarbiausia – jog tai liktų paslaptimi nuo konkurento. <br>
+    Gautų laivų komplektą sudaro 10 laivų: <br>
+        · vienviečiai laivai, kiekis – 4; <br>
+        · dviviečiai laivai, kiekis – 3; <br>
+        · triviečiai laivai, kiekis – 2; <br>
+        · keturviečiai laivai, kiekis – 1;<br>
+    Kiekvienas žaidėjas turi išdėstyti laivus taip, kad jie nesilietų vieną su kitu <br>
+    (t.y. laivas aplink save privalo turėti po vieną laisvą koordinatę į visas puses, įskaitant ir įstrižai esančias.) <br>
+    ir visas laivų kiekis turi būti išnaudotas išdėliojant juos į koordinačių lauką. <br>
+    Pats žaidimas vyksta taip (pirmuoju žaidėju bus vadinamas tas, kuris šauna, antruoju – į kurio laivus šauna):<br>
+        pirmasis žaidėjas pasirenka koordinatę, į kurią smūgiuoja, o priklausomai nuo to, ar į antrojo bet kurį laivą buvo pataikyta, priklauso sekanti žaidimo eiga:<br>
+        · pataikius, antrojo žaidėjo ekrane yra pažymima, jog į jo laivą buvo pataikytą, o pirmojo vienoje iš lentelių <br>
+    (kur žymimi ne-/pataikymai) yra pažymima koordinatė į kurią buvo pataikyta ir pirmasis tęsia savo bandymus šauti; <br>
+        · nepataikius, pirmojo žaidėjo pataikymų lentelėje yra pažymima koordinatė, kuri indikuoja, kad šūvis buvo netaiklus, <br>
+    o antrasis gauna galimybę pateikti savo spėjimą (šūvį).<br>
+    Ši laivų mūšio versija išsiskiria tuo, kad žaidimo eigoje, pataikydamas į priešininko laivą varžovas turi šansą gauti kortelę (blast area damage), <br>
+    kurią panaudojus, šūvis padengtų didesnę zoną žalos (nuo pasirinktos koordinatės būtų šaunama į kiekvieną aplinkinę koordinatę<br>
+    ir priklausomai nuo pasirinktos šūvio pozicijos vienu metu būtų šaunama maksimaliai į 9-ias skirtingas pozicijas. <br>
+    Žaidimas tęsiasi iki tol, kol pas vieną iš žaidėjų bus nuskandinti visi laivai. Tuo atveju laimėtoju skelbiamas jo oponentas, turintis nenuskandintų laivų.<br>
+    </p>
+
+

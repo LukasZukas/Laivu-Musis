@@ -3,3 +3,19 @@
 
 <a asp-controller="Game" asp-action="PlayAgainstBot" class="btn btn-primary">Play Against Bot</a>
 <a asp-controller="Game" asp-action="PlayAgainstPlayer" class="btn btn-secondary">Play Against Player</a>
+<a class="go_home" asp-area="" asp-controller="Home" asp-action="Index">Go back</a>
+
+<style>
+    .go_home {
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        background-color: red;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+</style>
+
