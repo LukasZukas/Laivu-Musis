@@ -1,0 +1,384 @@
+﻿@* Views/Game/PlayAgainstBot.cshtml *@
+<h2>Play Against Bot</h2>
+
+<div>
+    <h3>Choose a Ship</h3>
+    <button onclick="selectShip(1, 1)">🛥️ 1x1 Ship</button>
+    <button onclick="selectShip(2, 2)">⛵ 2x1 Ship</button>
+    <button onclick="selectShip(3, 3)">🚤 3x1 Ship</button>
+    <button onclick="selectShip(4, 4)">🚢 4x1 Ship</button>
+
+    <button onclick="toggleRotation()">Rotate: <span id="rotation-text">Horizontal</span></button>
+    <button onclick="randomizePlayerShips()">Randomize Ship Placement</button>
+    <button onclick="resetBoard()">Cancel Placement</button>
+</div>
+
+<div id="turn-indicator" style="margin-top: 20px;">
+    <h3>Current Turn: <span id="turn-text">Player's Turn</span></h3>
+</div>
+
+<div style="display: flex; gap: 50px; margin-top: 20px;">
+    <div>
+        <h3>Your Board (Place Ships)</h3>
+        <table id="player-board">
+            @for (int i = 0; i < 10; i++)
+            {
+                <tr>
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <td id="player-@i-@j" onclick="placeShip(this, @i, @j)"
+                            class="grid-cell player-cell">
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+
+    <div>
+        <h3>Opponent's Board (Attack)</h3>
+        <table id="bot-board">
+            @for (int i = 0; i < 10; i++)
+            {
+                <tr>
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <td id="bot-@i-@j" onclick="attackCell(this, @i, @j)"
+                            class="grid-cell bot-cell">
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
+</div>
+
+<script>
+    let selectedShip = { type: null, size: null };
+    let isHorizontal = true;
+    let playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+    let botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+    let isPlayerTurn = true; 
+
+    let shipCounts = { 1: 4, 2: 3, 3: 2, 4: 1 };
+    let placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    let gameStarted = false;
+    let playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));
+    let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  
+    let botCanShootAgain = false; 
+
+    function randomizePlayerShips() {
+        resetBoard();
+        console.log('Randomizing player ships...');
+
+        for (let size = 1; size <= 4; size++) {
+            for (let count = 0; count < shipCounts[size]; count++) {
+                let placed = false;
+                while (!placed) {
+                    let row = Math.floor(Math.random() * 10);
+                    let col = Math.floor(Math.random() * 10);
+                    let horizontal = Math.random() > 0.5;
+
+                    if (canPlaceShip(row, col, size, horizontal, playerGrid)) {
+                        console.log(`Placing ship of size ${size} at (${row}, ${col}), Horizontal: ${horizontal}`);
+                        for (let i = 0; i < size; i++) {
+                            let r = horizontal ? row : row + i;
+                            let c = horizontal ? col + i : col;
+                            document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy";
+                            playerGrid[r][c] = 1;
+                        }
+                        placed = true;
+                        placedShips[size]++;
+                    }
+                }
+            }
+        }
+
+        if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
+            document.getElementById("confirm-btn").style.display = "block";
+        }
+        console.log('Player ships placed:', placedShips);
+    }
+
+    function selectShip(type, size) {
+        if (placedShips[type] >= shipCounts[type]) {
+            alert(`You have already placed all ${shipCounts[type]} ships of this type.`);
+            return;
+        }
+
+        selectedShip = { type, size };
+    }
+
+    function toggleRotation() {
+        isHorizontal = !isHorizontal;
+        document.getElementById("rotation-text").innerText = isHorizontal ? "Horizontal" : "Vertical";
+    }
+
+    function placeShip(cell, row, col) {
+        if (!selectedShip.size) {
+            alert("Please select a ship first!");
+            return;
+        }
+
+        if (!canPlaceShip(row, col, selectedShip.size, isHorizontal, playerGrid)) {
+            alert("Invalid placement! Ships must not touch.");
+            return;
+        }
+
+        for (let i = 0; i < selectedShip.size; i++) {
+            let r = isHorizontal ? row : row + i;
+            let c = isHorizontal ? col + i : col;
+            document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy";
+            playerGrid[r][c] = 1; 
+        }
+
+        placedShips[selectedShip.type]++;
+
+        if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
+            document.getElementById("confirm-btn").style.display = "block";
+        }
+
+        selectedShip = { type: null, size: null };
+    }
+
+    function canPlaceShip(row, col, size, horizontal, grid) {
+        if (horizontal && col + size > 10) return false;
+        if (!horizontal && row + size > 10) return false;
+
+        for (let i = 0; i < size; i++) {
+            let r = horizontal ? row : row + i;
+            let c = horizontal ? col + i : col;
+
+            if (grid[r][c] !== 0) return false;
+
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && grid[nr][nc] !== 0) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    function resetBoard() {
+        playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        document.querySelectorAll(".player-cell").forEach(cell => cell.style.backgroundColor = "lightblue");
+        document.getElementById("confirm-btn").style.display = "none"; 
+    }
+
+    function startBattle() {
+        randomizeBotShips();
+        gameStarted = true;
+        document.getElementById("confirm-btn").style.display = "none";
+        alert("The battle begins!");
+    }
+
+        let botShipHealth = {};
+
+
+    function randomizeBotShips() {
+        botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botShipHealth = {}; 
+        console.log('Randomizing bot ships...');
+
+        for (let size = 1; size <= 4; size++) {
+            for (let count = 0; count < shipCounts[size]; count++) {
+                let placed = false;
+                while (!placed) {
+                    let row = Math.floor(Math.random() * 10);
+                    let col = Math.floor(Math.random() * 10);
+                    let horizontal = Math.random() > 0.5;
+
+                    if (canPlaceShip(row, col, size, horizontal, botGrid)) {
+                        console.log(`Placing bot's ship of size ${size} at (${row}, ${col}), Horizontal: ${horizontal}`);
+                        let shipId = `${size}-${count}`;
+                        for (let i = 0; i < size; i++) {
+                            let r = horizontal ? row : row + i;
+                            let c = horizontal ? col + i : col;
+                            botGrid[r][c] = shipId;
+                            document.getElementById(`bot-${r}-${c}`).style.backgroundColor = "navy";
+                        }
+
+                        botShipHealth[shipId] = size;
+
+                        placed = true;
+                    }
+                }
+            }
+        }
+        console.log('Bot ships placed:', botGrid);
+    }
+
+    function attackCell(cell, row, col) {
+        if (!gameStarted || !isPlayerTurn) return;
+
+        if (playerShots[row][col]) {
+            alert("You already guessed that spot!");
+            return;
+        }
+
+        playerShots[row][col] = true;
+
+        if (botGrid[row][col] !== 0) {
+            cell.style.backgroundColor = "red";
+            cell.innerHTML = "<span style='color: white;'>💥</span>";
+
+            let shipId = botGrid[row][col];
+            botShipHealth[shipId]--;
+
+            if (botShipHealth[shipId] === 0) {
+                alert("You destroyed a bot's ship!");
+                markShipSurroundingAsMissed(row, col, shipId);
+            }
+
+            if (!checkWinCondition()) {
+                botCanShootAgain = false;
+            }
+        } else {
+            cell.style.backgroundColor = "blue";
+            cell.innerHTML = "❌";
+            updateTurnDisplay("Bot's Turn");
+            isPlayerTurn = false;
+            botShoots();
+        }
+    }
+
+    function markShipSurroundingAsMissed(row, col, shipId) {
+        let shipCells = [];
+
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < 10; j++) {
+                if (botGrid[i][j] === shipId) {
+                    shipCells.push({ row: i, col: j });
+                }
+            }
+        }
+
+        shipCells.forEach(cell => {
+            let r = cell.row;
+            let c = cell.col;
+
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && playerShots[nr][nc] === false) {
+                        let surroundingCell = document.getElementById(`bot-${nr}-${nc}`);
+                        surroundingCell.style.backgroundColor = "blue";
+                        surroundingCell.innerHTML = "❌";  
+                        playerShots[nr][nc] = true;  
+                    }
+                }
+            }
+        });
+    }
+
+    function botShoots() {
+        setTimeout(() => {
+            if (isPlayerTurn) return;
+
+            let validShot = false;
+
+            while (!validShot) {
+                let row = Math.floor(Math.random() * 10);
+                let col = Math.floor(Math.random() * 10);
+
+                if (!botShots[row][col]) {
+                    botShots[row][col] = true;
+                    let cell = document.getElementById(`player-${row}-${col}`);
+                    if (playerGrid[row][col] === 1) {
+                        cell.style.backgroundColor = "red";
+                        cell.innerHTML = "<span style='color: white;'>💥</span>";
+                        validShot = true;
+                        updateTurnDisplay("Bot's Turn");
+                        if (!checkWinCondition()) {
+                            botShoots();
+                        }
+                    } else {
+                        cell.innerHTML = "❌";
+                        validShot = true;
+                        updateTurnDisplay("Player's Turn");
+                        isPlayerTurn = true;
+                    }
+                }
+            }
+        }, Math.floor(Math.random() * 1000) + 1000);
+    }
+    
+    function checkWinCondition() {
+        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0);
+        let playerShipsRemaining = playerGrid.flat().includes(1);
+
+        if (!botShipsRemaining) {
+            setTimeout(() => {
+                alert("Congratulations! You won! 🎉");
+                resetGame();
+            }, 500);
+            return true;
+        }
+
+        if (!playerShipsRemaining) {
+            setTimeout(() => {
+                alert("Game Over! The bot won! 😢");
+                resetGame();
+            }, 500);
+            return true;
+        }
+
+        return false;
+    }
+
+    function resetGame() {
+        gameStarted = false;
+        isPlayerTurn = true;
+        placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));
+        botShots = Array.from({ length: 10 }, () => Array(10).fill(false));
+        playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botShipHealth = {};
+        document.querySelectorAll(".player-cell, .bot-cell").forEach(cell => {
+            cell.style.backgroundColor = "lightblue";
+            cell.innerHTML = "";
+        });
+        document.getElementById("confirm-btn").style.display = "block";
+        document.getElementById("turn-text").textContent = "Player's Turn";
+    }
+
+    function updateTurnDisplay(turn) {
+        document.getElementById("turn-text").textContent = turn;
+    }
+
+</script>
+
+
+<style>
+    table {
+        border-collapse: collapse;
+    }
+
+    .grid-cell {
+        width: 35px;
+        height: 35px;
+        text-align: center;
+        border: 1px solid black;
+        background-color: lightblue;
+        cursor: pointer;
+    }
+
+    .player-cell {
+        background-color: lightblue;
+    }
+
+    .bot-cell {
+        background-color: lightgray;
+    }
+</style>
