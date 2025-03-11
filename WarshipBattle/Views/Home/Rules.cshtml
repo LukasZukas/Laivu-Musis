@@ -1,12 +1,34 @@
 ﻿@{
     ViewData["Title"] = "Rules";
 }
-<h1>RULES:</h1>
+<h1>RULES:📜</h1>
 <p style="color: black; font-size: 20px;">
-    ...<br>
+    Each of the two players receives two 10x10 grids:<br>
+    · The first grid is used for placing their own ships.<br>
+    · The second grid is used to search for the opponent's ships.<br>
+    Coordinates are determined easily, as numbers from 1 to 10 are placed at the top of the grid, and letters from A to J are placed on the left side.<br>
+    For example, if a player wants to select the cell in the third column and fourth row, the coordinates would be D3.<br>
+    The ship placement is straightforward: the key is to keep it a secret from the opponent.<br>
+    Each player receives a total of 10 ships:<br>
+    · Single-cell ships – 4;<br>
+    · Two-cell ships – 3;<br>
+    · Three-cell ships – 2;<br>
+    · Four-cell ship – 1.<br>
+    Ships must be placed without touching each other, meaning each ship must have at least one free coordinate around it in all directions, including diagonally.<br>
+    All ships must be placed on the grid.<br>
+    The game proceeds as follows (the first player is the one taking a shot, while the second player is the one being targeted):<br>
+    The first player selects a coordinate to fire at. The outcome determines the next steps:<br>
+    · If the shot hits a ship, the second player’s screen marks the hit, and the first player’s grid (used for tracking hits and misses) is updated accordingly. The first player continues shooting.<br>
+    · If the shot misses, the first player’s tracking grid marks the missed coordinate, and the second player gets their turn to shoot.<br>
+    This version of Battleship has a unique feature: when a player hits an opponent's ship, they have a chance to receive a special card (Blast Area Damage).<br>
+    When used, this card allows the player to fire a shot that affects a larger area, hitting all adjacent coordinates around the chosen target.<br>
+    Depending on the position, this could result in up to 9 hits at once.<br>
+    The game continues until one player loses all their ships. The opponent, who still has ships remaining, is declared the winner.<br>
 </p>
 
-<h1>TAISYKLĖS:</h1>
+<p>----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</p>
+
+<h1>TAISYKLĖS:📜</h1>
 <p style="color: black; font-size: 20px;">
     Kiekvienas iš žaidėjų (kurių yra du), gauna dvi 10x10 dydžio lenteles:<br>
     · pirmoji yra skirta savo laivams išdėstyti; <br>

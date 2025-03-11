@@ -29,9 +29,6 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Rules">Rules</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Settings">Settings</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Leaderboard">Leaderboard</a>
                         </li>
                     </ul>
@@ -40,6 +37,10 @@
             </div>
         </nav>
     </header>
+    <button class="music" id="toggleMusic" style="font-size: 30px;">🔊</button>
+    <audio id="backgroundMusic" loop>
+        <source src="/audio/music.mp3" type="audio/mpeg">
+    </audio>
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -57,3 +58,43 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+<script>
+    let musicButton = document.getElementById("toggleMusic");
+    let audio = document.getElementById("backgroundMusic");
+
+    if (localStorage.getItem("musicPlaying") === "true") {
+        audio.play();
+        musicButton.textContent = "🔊";
+    }
+    else{
+        audio.pause();
+        musicButton.textContent = "🔇";
+    }
+
+    musicButton.addEventListener("click", function () {
+        if (audio.paused) {
+            audio.play();
+            musicButton.textContent = "🔊";
+            localStorage.setItem("musicPlaying", "true");
+        } else {
+
+            audio.pause();
+            audio.currentTime = 0;
+            musicButton.textContent = "🔇";
+            localStorage.setItem("musicPlaying", "false");
+        }
+    });
+</script>
+<style>
+    .music {
+        position: fixed;
+        bottom: 70px;
+        right: 20px;
+        background-color: grey;
+        color: black;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+</style>

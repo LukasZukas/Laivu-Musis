@@ -26,10 +26,6 @@ public class HomeController : Controller
     {
         return View();
     }
-    public IActionResult Settings()
-    {
-        return View();
-    }
     public IActionResult Leaderboard()
     {
         return View();

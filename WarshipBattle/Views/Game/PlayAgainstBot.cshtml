@@ -52,7 +52,11 @@
         </table>
     </div>
 </div>
-
+<div class="color" id="choose_color">
+    <h5>Change the color of the table</h5>
+    <input type="color" id="colorPicker" value="#add8e6">
+    <button onclick="changeTableColor()" id="applyColorButton">Apply color</button>
+</div>
 <div style="margin-top: 20px;">
     <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
 </div>
@@ -71,6 +75,24 @@
     let playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));
     let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  
     let botCanShootAgain = false; 
+    let color = "#add8e6";
+
+    function changeTableColor()
+    {
+            let colorPicker = document.getElementById("colorPicker");
+            let selectedColor = colorPicker.value;
+            color = selectedColor;
+            if (!gameStarted)
+            {
+                if (color != "#000080")
+                    resetBoard();
+                else
+                    alert('You cannot change color of the table to the color of ships!');
+            }
+            else
+                alert('You cannot change color of the table when the game is started!');
+                    
+    }
 
     function randomizePlayerShips() {
         resetBoard();
@@ -172,7 +194,7 @@
     function resetBoard() {
         playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
         placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
-        document.querySelectorAll(".player-cell").forEach(cell => cell.style.backgroundColor = "lightblue");
+        document.querySelectorAll(".player-cell").forEach(cell => cell.style.backgroundColor = color);
         document.getElementById("confirm-btn").style.display = "none"; 
     }
 
@@ -180,6 +202,7 @@
         randomizeBotShips();
         gameStarted = true;
         document.getElementById("confirm-btn").style.display = "none";
+        document.getElementById("choose_color").style.display = "none";
         alert("The battle begins!");
     }
 
@@ -385,7 +408,7 @@
 
     .go_back {
         position: fixed;
-        top: 70px;
+        bottom: 70px;
         left: 10px;
         background-color: red;
         color: white;
@@ -393,5 +416,10 @@
         border: none;
         cursor: pointer;
         border-radius: 5px;
+    }
+    .color {
+        position: fixed;
+        bottom: 325px;
+        left: 425px;
     }
 </style>
