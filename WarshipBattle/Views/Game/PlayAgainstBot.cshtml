@@ -1,6 +1,7 @@
-﻿@* Views/Game/PlayAgainstBot.cshtml *@
+@* Views/Game/PlayAgainstBot.cshtml *@
 <h2>Play Against Bot</h2>
 
+<!-- Laivų pasirinkimas -->
 <div>
     <h3>Choose a Ship</h3>
     <button onclick="selectShip(1, 1)">🛥️ 1x1 Ship</button>
@@ -13,11 +14,13 @@
     <button onclick="resetBoard()">Cancel Placement</button>
 </div>
 
+<!-- Parodoma kieno eilė -->
 <div id="turn-indicator" style="margin-top: 20px;">
     <h3>Current Turn: <span id="turn-text">Player's Turn</span></h3>
 </div>
 
 <div style="display: flex; gap: 50px; margin-top: 20px;">
+    <!-- Žaidėjo lenta -->
     <div>
         <h3>Your Board (Place Ships)</h3>
         <table id="player-board">
@@ -35,6 +38,7 @@
         </table>
     </div>
 
+    <!-- Bot lenta -->
     <div>
         <h3>Opponent's Board (Attack)</h3>
         <table id="bot-board">
@@ -52,51 +56,28 @@
         </table>
     </div>
 </div>
-<div class="color" id="choose_color">
-    <h5>Change the color of the table</h5>
-    <input type="color" id="colorPicker" value="#add8e6">
-    <button onclick="changeTableColor()" id="applyColorButton">Apply color</button>
-</div>
+
 <div style="margin-top: 20px;">
     <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
 </div>
-<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
 
 <script>
-    let selectedShip = { type: null, size: null };
-    let isHorizontal = true;
-    let playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
-    let botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
-    let isPlayerTurn = true; 
+    let selectedShip = { type: null, size: null }; // pasirinktas laivas
+    let isHorizontal = true; // ar laivas horizontalus
+    let playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0)); // žaidėjo laivų lenta
+    let botGrid = Array.from({ length: 10 }, () => Array(10).fill(0)); // Bot laivų lenta
+    let isPlayerTurn = true; // tikrinimui kieno eilė
+    let shipCounts = { 1: 4, 2: 3, 3: 2, 4: 1 }; // Laivų pasirinkimų kiekis pagal dydį
+    let placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 }; // Padėtų laivų kiekis
+    let gameStarted = false; //Ar žaidimas prasidėjo
+    let playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));  // Žaidėjo šūvių lenta
+    let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  // Bot šūvių lenta
+    let botCanShootAgain = false; // Ar bot gali dar kartą šauti
+    let botShipHealth = {}; // Bot laivų gyvybių skaičiavimui
 
-    let shipCounts = { 1: 4, 2: 3, 3: 2, 4: 1 };
-    let placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    let gameStarted = false;
-    let playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));
-    let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  
-    let botCanShootAgain = false; 
-    let color = "#add8e6";
-
-    function changeTableColor()
-    {
-            let colorPicker = document.getElementById("colorPicker");
-            let selectedColor = colorPicker.value;
-            color = selectedColor;
-            if (!gameStarted)
-            {
-                if (color != "#000080")
-                    resetBoard();
-                else
-                    alert('You cannot change color of the table to the color of ships!');
-            }
-            else
-                alert('You cannot change color of the table when the game is started!');
-                    
-    }
-
+    // Atsitiktinis žaidėjo laivų išdėstymas
     function randomizePlayerShips() {
         resetBoard();
-        console.log('Randomizing player ships...');
 
         for (let size = 1; size <= 4; size++) {
             for (let count = 0; count < shipCounts[size]; count++) {
@@ -107,11 +88,10 @@
                     let horizontal = Math.random() > 0.5;
 
                     if (canPlaceShip(row, col, size, horizontal, playerGrid)) {
-                        console.log(`Placing ship of size ${size} at (${row}, ${col}), Horizontal: ${horizontal}`);
                         for (let i = 0; i < size; i++) {
                             let r = horizontal ? row : row + i;
                             let c = horizontal ? col + i : col;
-                            document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy";
+                            document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy"; //pagal row ir column, nuspalvinama lentelė
                             playerGrid[r][c] = 1;
                         }
                         placed = true;
@@ -121,13 +101,15 @@
             }
         }
 
+        // Patikrinama ar visi laivai padėti. Jei taip, atsiranda confirm mygtukas.
         if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
             document.getElementById("confirm-btn").style.display = "block";
         }
-        document.getElementById("choose_color").style.display = "none";
         console.log('Player ships placed:', placedShips);
     }
 
+
+    // Norimo laivo pasirinkimas
     function selectShip(type, size) {
         if (placedShips[type] >= shipCounts[type]) {
             alert(`You have already placed all ${shipCounts[type]} ships of this type.`);
@@ -137,11 +119,13 @@
         selectedShip = { type, size };
     }
 
+    // Pasirenkama laivo rotacija
     function toggleRotation() {
         isHorizontal = !isHorizontal;
         document.getElementById("rotation-text").innerText = isHorizontal ? "Horizontal" : "Vertical";
     }
 
+    // Savarankiškai pastatomas laivas ant lentos
     function placeShip(cell, row, col) {
         if (!selectedShip.size) {
             alert("Please select a ship first!");
@@ -169,36 +153,41 @@
         selectedShip = { type: null, size: null };
     }
 
+    // Patikrinama ar laivas gali būti padėtas
     function canPlaceShip(row, col, size, horizontal, grid) {
         if (horizontal && col + size > 10) return false;
         if (!horizontal && row + size > 10) return false;
 
+        // Patikrinama ar laivai nesiliestų
         for (let i = 0; i < size; i++) {
             let r = horizontal ? row : row + i;
             let c = horizontal ? col + i : col;
 
-            if (grid[r][c] !== 0) return false;
+            if (grid[r][c] !== 0) return false; // Langelis jau užimtas
 
+            // Patikrinama ar aplinkiniai langeliai (1 atstumi) nesiliečia
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     let nr = r + dr, nc = c + dc;
                     if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && grid[nr][nc] !== 0) {
-                        return false;
+                        return false; // Laivai liečiasi
                     }
                 }
             }
         }
 
-        return true;
+        return true; // Laivas gali būti padėtas
     }
 
+    // išvaloma lenta
     function resetBoard() {
         playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
         placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
-        document.querySelectorAll(".player-cell").forEach(cell => cell.style.backgroundColor = color);
-        document.getElementById("confirm-btn").style.display = "none"; 
+        document.querySelectorAll(".player-cell").forEach(cell => cell.style.backgroundColor = "lightblue");
+        document.getElementById("confirm-btn").style.display = "none";
     }
 
+    // Pradedama kova
     function startBattle() {
         randomizeBotShips();
         gameStarted = true;
@@ -206,13 +195,10 @@
         alert("The battle begins!");
     }
 
-        let botShipHealth = {};
-
-
+    // Atsitiktinai pastatomi bot-o laivai
     function randomizeBotShips() {
         botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
         botShipHealth = {}; 
-        console.log('Randomizing bot ships...');
 
         for (let size = 1; size <= 4; size++) {
             for (let count = 0; count < shipCounts[size]; count++) {
@@ -223,13 +209,12 @@
                     let horizontal = Math.random() > 0.5;
 
                     if (canPlaceShip(row, col, size, horizontal, botGrid)) {
-                        console.log(`Placing bot's ship of size ${size} at (${row}, ${col}), Horizontal: ${horizontal}`);
-                        let shipId = `${size}-${count}`;
+                        let shipId = `${size}-${count}`; // Sukuriamas ID gyvybių sekimui
                         for (let i = 0; i < size; i++) {
                             let r = horizontal ? row : row + i;
                             let c = horizontal ? col + i : col;
-                            botGrid[r][c] = shipId;
-                            document.getElementById(`bot-${r}-${c}`).style.backgroundColor = "navy";
+                            botGrid[r][c] = shipId; // Pažymimas laivas unikaliu id
+                            //document.getElementById(`bot-${r}-${c}`).style.backgroundColor = "navy";
                         }
 
                         botShipHealth[shipId] = size;
@@ -239,9 +224,9 @@
                 }
             }
         }
-        console.log('Bot ships placed:', botGrid);
     }
 
+    // Atakuojama lentos koordinatė
     function attackCell(cell, row, col) {
         if (!gameStarted || !isPlayerTurn) return;
 
@@ -276,9 +261,11 @@
         }
     }
 
+    // Pažymimos aplinkinės koordinatės kaip praleistos bot'o laivo, kuris yra sunaikintas
     function markShipSurroundingAsMissed(row, col, shipId) {
         let shipCells = [];
 
+        // Ieškomos visos koordinatės kurios priklauso sunaikintam laivui pagal jo shipID
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < 10; j++) {
                 if (botGrid[i][j] === shipId) {
@@ -287,24 +274,27 @@
             }
         }
 
+        // Aplinkinės laivo koordinatės pažymimos kaip nepataikytos
         shipCells.forEach(cell => {
             let r = cell.row;
             let c = cell.col;
 
+            // Einama per laivo aplinkines koordinates
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     let nr = r + dr, nc = c + dc;
                     if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && playerShots[nr][nc] === false) {
                         let surroundingCell = document.getElementById(`bot-${nr}-${nc}`);
                         surroundingCell.style.backgroundColor = "blue";
-                        surroundingCell.innerHTML = "❌";  
-                        playerShots[nr][nc] = true;  
+                        surroundingCell.innerHTML = "❌";
+                        playerShots[nr][nc] = true; 
                     }
                 }
             }
         });
     }
 
+    // bot šūvis
     function botShoots() {
         setTimeout(() => {
             if (isPlayerTurn) return;
@@ -319,6 +309,7 @@
                     botShots[row][col] = true;
                     let cell = document.getElementById(`player-${row}-${col}`);
                     if (playerGrid[row][col] === 1) {
+                        playerGrid[row][col] = 2;
                         cell.style.backgroundColor = "red";
                         cell.innerHTML = "<span style='color: white;'>💥</span>";
                         validShot = true;
@@ -326,7 +317,7 @@
                         if (!checkWinCondition()) {
                             botShoots();
                         }
-                    } else {
+                    } else if (playerGrid[row][col] === 0){
                         cell.innerHTML = "❌";
                         validShot = true;
                         updateTurnDisplay("Player's Turn");
@@ -337,9 +328,10 @@
         }, Math.floor(Math.random() * 1000) + 1000);
     }
     
+    //Tikrinama ar kuris nors laimėjo žaidimą
     function checkWinCondition() {
-        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0);
-        let playerShipsRemaining = playerGrid.flat().includes(1);
+        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0); //Tikrinama, ar bent vienas bot'o laivas dar turi gyvybių
+        let playerShipsRemaining = playerGrid.flat().includes(1); // Tikrinama, ar žaidėjas turi bent vieną laivą su gyvybėmis
 
         if (!botShipsRemaining) {
             setTimeout(() => {
@@ -360,6 +352,7 @@
         return false;
     }
 
+    //Atstatomas žaidimas
     function resetGame() {
         gameStarted = false;
         isPlayerTurn = true;
@@ -377,6 +370,7 @@
         document.getElementById("turn-text").textContent = "Player's Turn";
     }
 
+    // Atnaujinama kieno eilė šauti
     function updateTurnDisplay(turn) {
         document.getElementById("turn-text").textContent = turn;
     }
@@ -404,30 +398,5 @@
 
     .bot-cell {
         background-color: lightgray;
-    }
-
-    .go_back {
-        position: fixed;
-        bottom: 70px;
-        left: 10px;
-        background-color: darkcyan;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: background-color 0.2s;
-    }
-
-    .go_back:hover {
-        background-color: #005858;
-        box-shadow: var(--hover-shadow);
-        color: white;
-    }
-    .color {
-        position: fixed;
-        bottom: 325px;
-        left: 425px;
     }
 </style>
