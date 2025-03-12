@@ -79,7 +79,6 @@
         } else {
 
             audio.pause();
-            audio.currentTime = 0;
             musicButton.textContent = "🔇";
             localStorage.setItem("musicPlaying", "false");
         }
@@ -96,5 +95,12 @@
         border: none;
         cursor: pointer;
         border-radius: 5px;
+        transition: background-color 0.2s;
+    }
+
+    .music:hover {
+        background-color: dimgrey;
+        box-shadow: var(--hover-shadow);
+        color: white;
     }
 </style>

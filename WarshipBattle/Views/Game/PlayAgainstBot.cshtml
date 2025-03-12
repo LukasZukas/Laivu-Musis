@@ -124,6 +124,7 @@
         if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
             document.getElementById("confirm-btn").style.display = "block";
         }
+        document.getElementById("choose_color").style.display = "none";
         console.log('Player ships placed:', placedShips);
     }
 
@@ -202,7 +203,6 @@
         randomizeBotShips();
         gameStarted = true;
         document.getElementById("confirm-btn").style.display = "none";
-        document.getElementById("choose_color").style.display = "none";
         alert("The battle begins!");
     }
 
@@ -410,12 +410,20 @@
         position: fixed;
         bottom: 70px;
         left: 10px;
-        background-color: red;
+        background-color: darkcyan;
         color: white;
         padding: 10px 20px;
         border: none;
         cursor: pointer;
         border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+    .go_back:hover {
+        background-color: #005858;
+        box-shadow: var(--hover-shadow);
+        color: white;
     }
     .color {
         position: fixed;
