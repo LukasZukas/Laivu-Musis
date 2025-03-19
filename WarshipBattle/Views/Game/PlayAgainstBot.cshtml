@@ -82,6 +82,7 @@
     // Atsitiktinis žaidėjo laivų išdėstymas
     function randomizePlayerShips() {
         resetBoard();
+        playerShipHealth = {}
         for (let size = 1; size <= 4; size++) {
             for (let count = 0; count < shipCounts[size]; count++) {
                 let placed = false;
@@ -96,20 +97,20 @@
                             let r = horizontal ? row : row + i;
                             let c = horizontal ? col + i : col;
                             document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy"; //pagal row ir column, nuspalvinama lentelė
-                            playerGrid[r][c] = shipId;
+                            playerGrid[r][c] = 1;
                         }
                         placed = true;
                         playerShipHealth[shipId] = size;
                         placedShips[size]++;
+                    }
                 }
-            }
+            }   
         }
-
         // Patikrinama ar visi laivai padėti. Jei taip, atsiranda confirm mygtukas.
         if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
             document.getElementById("confirm-btn").style.display = "block";
-        }
         console.log('Player ships placed:', placedShips);
+        }
     }
 
 
