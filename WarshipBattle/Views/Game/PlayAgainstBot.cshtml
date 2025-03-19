@@ -60,6 +60,7 @@
 <div style="margin-top: 20px;">
     <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
 </div>
+<a class="go_home" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
 
 <script>
     let selectedShip = { type: null, size: null }; // pasirinktas laivas
@@ -74,11 +75,13 @@
     let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  // Bot šūvių lenta
     let botCanShootAgain = false; // Ar bot gali dar kartą šauti
     let botShipHealth = {}; // Bot laivų gyvybių skaičiavimui
+    let playerShipHealth = {};
+    let botMove = [];
+    let botShotList = [];
 
     // Atsitiktinis žaidėjo laivų išdėstymas
     function randomizePlayerShips() {
         resetBoard();
-
         for (let size = 1; size <= 4; size++) {
             for (let count = 0; count < shipCounts[size]; count++) {
                 let placed = false;
@@ -88,15 +91,16 @@
                     let horizontal = Math.random() > 0.5;
 
                     if (canPlaceShip(row, col, size, horizontal, playerGrid)) {
+                        let shipId = `${size}-${count}`;
                         for (let i = 0; i < size; i++) {
                             let r = horizontal ? row : row + i;
                             let c = horizontal ? col + i : col;
                             document.getElementById(`player-${r}-${c}`).style.backgroundColor = "navy"; //pagal row ir column, nuspalvinama lentelė
-                            playerGrid[r][c] = 1;
+                            playerGrid[r][c] = shipId;
                         }
                         placed = true;
+                        playerShipHealth[shipId] = size;
                         placedShips[size]++;
-                    }
                 }
             }
         }
@@ -246,7 +250,7 @@
 
             if (botShipHealth[shipId] === 0) {
                 alert("You destroyed a bot's ship!");
-                markShipSurroundingAsMissed(row, col, shipId);
+                markShipSurroundingAsMissed(row, col, shipId,true);
             }
 
             if (!checkWinCondition()) {
@@ -257,19 +261,26 @@
             cell.innerHTML = "❌";
             updateTurnDisplay("Bot's Turn");
             isPlayerTurn = false;
-            botShoots();
+            botShoots(false);
         }
     }
 
     // Pažymimos aplinkinės koordinatės kaip praleistos bot'o laivo, kuris yra sunaikintas
-    function markShipSurroundingAsMissed(row, col, shipId) {
+    function markShipSurroundingAsMissed(row, col, shipId, bot) {
         let shipCells = [];
 
         // Ieškomos visos koordinatės kurios priklauso sunaikintam laivui pagal jo shipID
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < 10; j++) {
-                if (botGrid[i][j] === shipId) {
+                if (bot){
+                    if (botGrid[i][j] === shipId) {
                     shipCells.push({ row: i, col: j });
+                    }
+                }
+                else{
+                    if (playerGrid[i][j] === shipId) {
+                    shipCells.push({ row: i, col: j });
+                    }
                 }
             }
         }
@@ -283,19 +294,28 @@
             for (let dr = -1; dr <= 1; dr++) {
                 for (let dc = -1; dc <= 1; dc++) {
                     let nr = r + dr, nc = c + dc;
-                    if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && playerShots[nr][nc] === false) {
+                    if (bot){
+                        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && playerShots[nr][nc] === false) {
                         let surroundingCell = document.getElementById(`bot-${nr}-${nc}`);
                         surroundingCell.style.backgroundColor = "blue";
                         surroundingCell.innerHTML = "❌";
-                        playerShots[nr][nc] = true; 
+                        playerShots[nr][nc] = true;
+                        }
+                    }
+                    else{
+                        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && botShots[nr][nc] === false) {
+                        let surroundingCell = document.getElementById(`player-${nr}-${nc}`);
+                        surroundingCell.style.backgroundColor = "blue";
+                        surroundingCell.innerHTML = "❌";
+                        botShots[nr][nc] = true;
+                        }
                     }
                 }
             }
         });
     }
-
-    // bot šūvis
-    function botShoots() {
+     // bot šūvis
+    function botShoots(hit) {
         setTimeout(() => {
             if (isPlayerTurn) return;
 
@@ -305,27 +325,231 @@
                 let row = Math.floor(Math.random() * 10);
                 let col = Math.floor(Math.random() * 10);
 
+                if (hit){
+                    shootNear(true);
+                    row = botMove[0];
+                    col = botMove[1];
+                }
+                else{
+                    if (hitPreviously())
+                    {
+                        shootNear(false);
+                        row = botMove[0];
+                        col = botMove[1];
+                    }
+                }
+
                 if (!botShots[row][col]) {
                     botShots[row][col] = true;
                     let cell = document.getElementById(`player-${row}-${col}`);
-                    if (playerGrid[row][col] === 1) {
+                    if (playerGrid[row][col] === 1) { //pataikė į laivą
                         playerGrid[row][col] = 2;
                         cell.style.backgroundColor = "red";
                         cell.innerHTML = "<span style='color: white;'>💥</span>";
+
+                        let shipId = botGrid[row][col];
+                        playerShipHealth[shipId]--;
+
+                        if (playerShipHealth[shipId] === 0)
+                            {
+                                alert("Bot destroyed your ship!");
+                                markShipSurroundingAsMissed(row, col, shipId,false);
+                            }
                         validShot = true;
                         updateTurnDisplay("Bot's Turn");
                         if (!checkWinCondition()) {
-                            botShoots();
-                        }
-                    } else if (playerGrid[row][col] === 0){
+                            botMove[0] = row;
+                            botMove[1] = col;
+                            botShotList.push({row: row, col: col, hit: true});
+                            botShoots(true);
+                            }
+
+                    }
+                    else if (playerGrid[row][col] === 0){
                         cell.innerHTML = "❌";
                         validShot = true;
+                        botMove[0] = row;
+                        botMove[1] = col;
+                        botShotList.push({row: row, col: col, hit: false});
                         updateTurnDisplay("Player's Turn");
                         isPlayerTurn = true;
                     }
                 }
             }
         }, Math.floor(Math.random() * 1000) + 1000);
+    }
+    function hitPreviously()
+    {
+        let max = 4;
+        if(botShotList.length < 4) max = botShotList.length -1;
+
+        for (let i=1; i < max; i++)
+        {
+            if(botShotList[botShotList.length - (i+1)].hit)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    function isShotValid(row, col) 
+    {
+        return row >= 0 && row < 10 && col >= 0 && col < 10 && !botShots[row][col];
+    }
+    function setCoordinates(r1,c1,r2,c2)
+    {
+                if (r1 == r2)
+                {
+                    botMove[0] = r1;
+                    if (c1 > c2) botMove[1] = c1 + 1; //eina desinen
+                    else botMove[1] = c1 - 1; //eina kairen
+                    return;
+                }
+                if (c1 == c2)
+                {
+                    botMove[1] = c1;
+                    if (r1 > r2) botMove[0] = r1 + 1; //eina aukstyn
+                    else botMove[0] = r1 - 1; //eina eina zemyn
+                    return;
+                }
+    }
+    function shootNear(hitLast)
+    {
+        if (hitLast){ //paskutini pataike
+            if (botShotList.length >= 2 && botShotList[botShotList.length - 2].hit) //pataike bent 2 is eiles
+                {
+                    let r1 = botShotList[botShotList.length - 1].row;
+                    let r2 = botShotList[botShotList.length - 2].row;
+                    let c1 = botShotList[botShotList.length - 1].col;
+                    let c2 = botShotList[botShotList.length - 2].col;
+
+
+                    setCoordinates(r1,c1,r2,c2);
+
+                    if (!isShotValid(botMove[0],botMove[1]))
+                    {
+                        let k = 1;
+                        let r = 0;
+                        let c = 0;
+
+                        while(botShotList[botShotList.length - k].hit && k<botShotList.length){
+                            r = botShotList[botShotList.length - k].row;
+                            c = botShotList[botShotList.length - k].col;
+                            k++;
+                        }
+                        setCoordinates(r,c,r1,c1);
+                        if (isShotValid(botMove[0],botMove[1])) return;
+                        else{
+                            while(!isShotValid(botMove[0],botMove[1]))
+                            {
+                                botMove[0] = Math.floor(Math.random() * 10);
+                                botMove[1] = Math.floor(Math.random() * 10);
+                            }
+                        }
+                    }
+                    return;
+                }
+                botMove[0]--; // pataike tik viena. Iskart po pataikymo pirmasis spejimas bus aukstyn
+                if (!isShotValid(botMove[0],botMove[1]))
+                {
+                    for (let i = 2; i <= 4; i++)
+                    {
+                        shift(i);
+                        if (isShotValid(botMove[0],botMove[1])) return;
+                    }
+                }
+                return;
+        }
+        else
+        {
+            let back = 0;
+            let max = 4;
+            if(botShotList.length < 4) max = botShotList.length -1;
+
+            for (let i=1; i < max; i++)
+            {
+                if(botShotList[botShotList.length - (i+1)].hit)
+                {
+                    back=i+1;
+                    break;
+                }
+            }
+            if (back == 2 && botShotList.length >= 4) //jei priespaskutinis buvo pataikytas
+            {
+                let row = 1;
+                if (botShotList[botShotList.length - 3].hit) row++;
+                if (botShotList[botShotList.length - 4].hit) row++;
+
+                if (row>1) //jei buvo pataikyti keli is eiles(ejimo krypties keitimas nepataikius)
+                {
+                    let l1 = 2;
+                    let l2 = 3;
+
+                    if (row == 3)
+                    {
+                        l1++;
+                        l2++;
+                    }
+                    let hit_last_r = botShotList[botShotList.length - l2].row;
+                    let hit_r = botShotList[botShotList.length - l1].row;
+                    let hit_last_c = botShotList[botShotList.length - l2].col;
+                    let hit_c = botShotList[botShotList.length - l1].col;
+
+                    // if (hit_last_r == hit_r)
+                    // {
+                    //     botMove[0] = hit_last_r;
+                    //     if (hit_last_c > hit_c) botMove[1] = hit_last_c + 1; //eina desinen
+                    //     else botMove[1] = hit_last_c - 1; //eina kairen
+                    // }
+                    // if (hit_last_c == hit_c)
+                    // {
+                    //     botMove[1] = hit_last_c;
+                    //     if (hit_last_r > hit_r) botMove[0] = hit_last_r + 1; //eina aukstyn
+                    //     else botMove[1] = hit_last_r - 1; //eina zemyn
+                    // }
+
+                    setCoordinates(hit_last_r,hit_last_c,hit_r,hit_c);
+
+                    if (!isShotValid(botMove[0],botMove[1]))
+                    {
+                        botMove[0] = Math.floor(Math.random() * 10);
+                        botMove[1] = Math.floor(Math.random() * 10);
+                    }
+                    return;
+                }
+            }
+                shift(back);
+                while(!isShotValid(botMove[0],botMove[1]))
+                {
+                    back++;
+                    if (back > 4)
+                    {
+                        botMove[0] = Math.floor(Math.random() * 10);
+                        botMove[1] = Math.floor(Math.random() * 10);
+                    }
+                    shift(back);
+                }
+                return;
+        }
+    }
+    function shift(back)
+    {
+        switch(back) { //veikia tokiu principu: aplink pataikyta langeli kryptys yra bandomos ratu(eiles tvarka: aukstyn, desine, zemyn, kaire) tol kol pataikoma
+                case 2:
+                    botMove[0]++;
+                    botMove[1]++;
+                    break;
+                case 3:
+                    botMove[0]++;
+                    botMove[1]--;
+                    break;
+                case 4:
+                    botMove[0]--;
+                    botMove[1]--;
+                    break;
+                default:
+                    break;
+            }
     }
     
     //Tikrinama ar kuris nors laimėjo žaidimą
@@ -399,4 +623,24 @@
     .bot-cell {
         background-color: lightgray;
     }
+
+    .go_home {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: darkcyan;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+        .go_home:hover {
+            background-color: #005858;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
 </style>
