@@ -49,7 +49,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - WarshipBattle - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            © 2025 - WarshipBattle - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -62,26 +62,45 @@
     let musicButton = document.getElementById("toggleMusic");
     let audio = document.getElementById("backgroundMusic");
 
-    if (localStorage.getItem("musicPlaying") === "true") {
-        audio.play();
-        musicButton.textContent = "🔊";
-    }
-    else{
-        audio.pause();
-        musicButton.textContent = "🔇";
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+        let sessionVisited = sessionStorage.getItem("sessionVisited");
+        let musicPlaying = sessionStorage.getItem("musicPlaying") === "true";
+        let musicPosition = Number(sessionStorage.getItem("musicPosition")) || 0;
+
+        audio.currentTime = musicPosition;
+
+        if (!sessionVisited) {
+            audio.pause();
+            musicButton.textContent = "🔇";
+            sessionStorage.setItem("musicPlaying", "false");
+            sessionStorage.setItem("sessionVisited", "true");
+        } else {
+            if (musicPlaying) {
+                audio.play();
+                musicButton.textContent = "🔊";
+            } else {
+                audio.pause();
+                musicButton.textContent = "🔇";
+            }
+        }
+    });
 
     musicButton.addEventListener("click", function () {
         if (audio.paused) {
             audio.play();
             musicButton.textContent = "🔊";
-            localStorage.setItem("musicPlaying", "true");
+            sessionStorage.setItem("musicPlaying", "true");
         } else {
-
             audio.pause();
             musicButton.textContent = "🔇";
-            localStorage.setItem("musicPlaying", "false");
+            sessionStorage.setItem("musicPlaying", "false");
         }
+        sessionStorage.setItem("musicPosition", audio.currentTime);
+    });
+
+    window.addEventListener("beforeunload", function () {
+        sessionStorage.setItem("musicPosition", audio.currentTime);
+        sessionStorage.setItem("musicPlaying", !audio.paused);
     });
 </script>
 <style>
@@ -98,9 +117,9 @@
         transition: background-color 0.2s;
     }
 
-    .music:hover {
-        background-color: dimgrey;
-        box-shadow: var(--hover-shadow);
-        color: white;
-    }
+        .music:hover {
+            background-color: dimgrey;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
 </style>

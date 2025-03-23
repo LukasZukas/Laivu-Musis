@@ -12,6 +12,7 @@
     <button onclick="toggleRotation()">Rotate: <span id="rotation-text">Horizontal</span></button>
     <button onclick="randomizePlayerShips()">Randomize Ship Placement</button>
     <button onclick="resetBoard()">Cancel Placement</button>
+    <button onclick="resetGame();">Reset game</button>
 </div>
 
 <!-- Parodoma kieno eilė -->
@@ -24,9 +25,19 @@
     <div>
         <h3>Your Board (Place Ships)</h3>
         <table id="player-board">
+            <!-- Stulpelių antraštės (A-J) -->
+            <tr>
+                <th class="corner-cell"></th> <!-- Tuscias langelis kampe -->
+                @for (int j = 0; j < 10; j++)
+                {
+                    <th class="column-header">@((char)('A' + j))</th>
+                }
+            </tr>
             @for (int i = 0; i < 10; i++)
             {
                 <tr>
+                    <!-- Eilutės numeris (1-10) -->
+                    <th class="row-header">@(i + 1)</th>
                     @for (int j = 0; j < 10; j++)
                     {
                         <td id="player-@i-@j" onclick="placeShip(this, @i, @j)"
@@ -42,9 +53,19 @@
     <div>
         <h3>Opponent's Board (Attack)</h3>
         <table id="bot-board">
+            <!-- Stulpelių antraštės (A-J) -->
+            <tr>
+                <th class="corner-cell"></th> <!-- Tuščias langelis viršutiniame kairiajame kampe -->
+                @for (int j = 0; j < 10; j++)
+                {
+                    <th class="column-header">@((char)('A' + j))</th>
+                }
+            </tr>
             @for (int i = 0; i < 10; i++)
             {
                 <tr>
+                    <!-- Eilutės numeris (1-10) -->
+                    <th class="row-header">@(i + 1)</th>
                     @for (int j = 0; j < 10; j++)
                     {
                         <td id="bot-@i-@j" onclick="attackCell(this, @i, @j)"
@@ -462,71 +483,6 @@
     }
     function shootNear()
     {
-        // if (botShotList.length >= 2) //pataike bent 2 is eiles
-            //     {
-            //         let r1 = botShotList[botShotList.length - 1].row;
-            //         let c1 = botShotList[botShotList.length - 1].col;
-            //         if (botShotList[botShotList.length - 2].hit)
-            //         {
-
-            //             let r2 = botShotList[botShotList.length - 2].row;
-            //             let c2 = botShotList[botShotList.length - 2].col;
-
-
-            //             setCoordinates(r1,c1,r2,c2);
-
-            //             if (!isShotValid(botMove[0],botMove[1]))
-            //             {
-            //                 let k = 1;
-            //                 let r = 0;
-            //                 let c = 0;
-
-            //                 while(botShotList[botShotList.length - k].hit && k<botShotList.length){
-            //                     r = botShotList[botShotList.length - k].row;
-            //                     c = botShotList[botShotList.length - k].col;
-            //                     k++;
-            //             }
-            //                 setCoordinates(r,c,r1,c1);
-            //                 if (isShotValid(botMove[0],botMove[1])) return;
-            //                 else{
-            //                     while(!isShotValid(botMove[0],botMove[1]))
-            //                     {
-            //                         botMove[0] = Math.floor(Math.random() * 10);
-            //                         botMove[1] = Math.floor(Math.random() * 10);
-            //                     }
-            //                 }
-            //             }
-            //             return;
-            //         }
-            //         if (checkNearHit(r1,c1) > 0)
-            //         {
-            //             switch(checkNearHit(r1,c1)) { //veikia tokiu principu: aplink pataikyta langeli kryptys yra bandomos ratu(eiles tvarka: aukstyn, desine, zemyn, kaire) tol kol pataikoma
-            //                 case 1:
-            //                     botMove[0]++;
-            //                     break;
-            //                 case 2:
-            //                     botMove[1]--;
-            //                     break;
-            //                 case 3:
-            //                     botMove[0]--;
-            //                     break;
-            //                 case 4:
-            //                     botMove[1]++;
-            //                     break;
-            //                 default:
-            //                     break;
-            //             }
-            //             if (isShotValid(botMove[0],botMove[1])) return;
-            //                 else{
-            //                     while(!isShotValid(botMove[0],botMove[1]))
-            //                     {
-            //                         botMove[0] = Math.floor(Math.random() * 10);
-            //                         botMove[1] = Math.floor(Math.random() * 10);
-            //                     }
-            //                 }
-            //                 return
-            //         }
-            //     }
             let r1 = botShotList[botShotList.length - 1].row;
             let c1 = botShotList[botShotList.length - 1].col;
             if (checkNearHit(r1,c1,2) > 0)
@@ -534,27 +490,28 @@
                 console.log("Salia yra sunaikintas langelis: ", botMove);
                         switch(checkNearHit(r1,c1,2)) {
                             case 1:
-                                botMove[0]++;
+                                r1++;
                                 break;
                             case 2:
-                                botMove[1]--;
+                                c1--;
                                 break;
                             case 3:
-                                botMove[0]--;
+                                r1--;
                                 break;
                             case 4:
-                                botMove[1]++;
+                                c1++;
                                 break;
                             default:
                                 break;
                         }
-                        if (!isShotValid(botMove[0],botMove[1]))
+                        if (!isShotValid(r1,c1))
                         {
-                            console.log("Netinka langelis: ", botMove)
-                            let r = botMove[0];
-                            let c =botMove[1];
+                            console.log("Ejimas netinka: ", botMove);
+                            let r = botShotList[botShotList.length - 1].row;
+                            let c = botShotList[botShotList.length - 1].col;
                             let direction = checkNearHit(r,c,2);
-                            for (let i = 0; i < 3; i++)
+
+                            while (playerGrid[r][c] == 2)
                             {
                                 switch(direction) {
                                     case 1:
@@ -571,106 +528,216 @@
                                         break;
                                     default:
                                         break;
-
-                                    if (playerGrid[r][c] != 2)
-                                        {
-                                            console.log("Nelygus sunaikintam langeliui");
-                                            if (isShotValid(r,c)){
-                                                botMove[0] = r;
-                                                botMove[1] = c;
-                                                console.log("Langelis tenkina, koordinates: ",botMove);
-                                                return;
-                                            }
                                         }
-                                }
+                                    if (!(r >= 0 && r < 10 && c >= 0 && c < 10))
+                                    {
+                                        console.log("Ejimas nutrauktas: ", botMove);
+                                        botMove[0] = Math.floor(Math.random() * 10);
+                                        botMove[1] = Math.floor(Math.random() * 10);
+                                        return;
+                                    }
                             }
-                            botMove[0] = Math.floor(Math.random() * 10);
-                            botMove[1] = Math.floor(Math.random() * 10);
+                            if (isShotValid(r,c))
+                            {
+                                console.log("Perstatymas isejo: ", botMove);
+                                botMove[0] = r;
+                                botMove[1] = c;
+                                return;
+                            }
+                            else{
+                                console.log("Perstatymas neisejo: ", botMove);
+                                botMove[0] = Math.floor(Math.random() * 10);
+                                botMove[1] = Math.floor(Math.random() * 10);
+                                return;
+                            }
                         }
-                        return;
-
+                        else{
+                            botMove[0] = r1;
+                            botMove[1] = c1;
+                            console.log("Ejimas tinka: ", botMove);
+                            return;
+                        }
             }
             else{
                 console.log("Salia nera sunaikinto langelio: ", botMove);
-                botMove[0]--; // pataike tik viena. Iskart po pataikymo pirmasis spejimas bus aukstyn
-                if (!isShotValid(botMove[0],botMove[1]))
+                if (checkNearHit(r1,c1,1) > 0)
                 {
-                    while (!isShotValid(botMove[0],botMove[1]))
-                    {
-                        for (let i = 2; i <= 4; i++)
-                        {
-                            shift(i);
-                            if (isShotValid(botMove[0],botMove[1])) return;
+                    console.log("Kryptis: ", checkNearHit(r1,c1,1));
+                    switch(checkNearHit(r1,c1,1)) {
+                            case 1:
+                                r1--;
+                                break;
+                            case 2:
+                                c1++;
+                                break;
+                            case 3:
+                                r1++;
+                                break;
+                            case 4:
+                                c1--;
+                                break;
+                            default:
+                                break;
                         }
+                        if (isShotValid(r1,c1))
+                        {
+                            botMove[0] = r1;
+                            botMove[1] = c1;
+                            console.log("Naujasis langelis tiko: ", botMove);
+                            return;
+                        }
+                        else
+                        {
+                            console.log("Naujasis langelis netiko: ", botMove);
+                            botMove[0] = Math.floor(Math.random() * 10);
+                            botMove[1] = Math.floor(Math.random() * 10);
+                            return;
+                        }
+                        
+                }
+                else
+                {
+                    console.log("Salia nera jokiu laivu langeliu: ", botMove);
+                    botMove[0] = Math.floor(Math.random() * 10);
+                    botMove[1] = Math.floor(Math.random() * 10);
+                    return;
+                }
+            }
+    }
+
+    //kitokia logika, yra neaiskumu ir trukumu, per lengva butu laimeti
+    function shootNear2(hitLast)
+    {
+        if(hitLast)
+        {
+            if (botShotList.length >= 2)
+            {
+                let r1 = botShotList[botShotList.length - 1].row;
+                let c1 = botShotList[botShotList.length - 1].col;
+                if (botShotList[botShotList.length - 2].hit)
+                {
+                    let r2 = botShotList[botShotList.length - 2].row;
+                    let c2 = botShotList[botShotList.length - 2].col;
+
+                    setCoordinates(r1,c1,r2,c2);
+
+                    if (!isShotValid(botMove[0],botMove[1]))
+                    {
+                        let k = 1;
+                        let r = 0;
+                        let c = 0;
+
+                        while(botShotList[botShotList.length - k].hit && k<botShotList.length){
+                            r = botShotList[botShotList.length - k].row;
+                            c = botShotList[botShotList.length - k].col;
+                            k++;
+                        }
+                        setCoordinates(r,c,r1,c1);
+                        if (isShotValid(botMove[0],botMove[1])) return;
+                        else{
+                            while(!isShotValid(botMove[0],botMove[1]))
+                            {
+                                botMove[0] = Math.floor(Math.random() * 10);
+                                botMove[1] = Math.floor(Math.random() * 10);
+                            }
+                        }
+                    }
+                    return;
+                }
+                if (checkNearHit(r1,c1) > 0)
+                {
+                    switch(checkNearHit(r1,c1)) {
+                        case 1:
+                            botMove[0]++;
+                            break;
+                        case 2:
+                            botMove[1]--;
+                            break;
+                        case 3:
+                            botMove[0]--;
+                            break;
+                        case 4:
+                            botMove[1]++;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (isShotValid(botMove[0],botMove[1])) return;
+                    else{
+                        while(!isShotValid(botMove[0],botMove[1]))
+                        {
+                            botMove[0] = Math.floor(Math.random() * 10);
+                            botMove[1] = Math.floor(Math.random() * 10);
+                        }
+                    }
+                    return
+                }
+            }
+        }
+        else
+        {
+            console.log("Praeito nepataike: ", botMove);
+            let back = 0;
+            let max = 4;
+            if(botShotList.length < 4) max = botShotList.length -1;
+
+            for (let i=0; i < max; i++)
+            {
+                if(botShotList[botShotList.length - (i+1)].hit)
+                {
+                    back=i+1;
+                    break;
+                }
+            }
+            if (back == 2 && botShotList.length >= 4)
+            {
+                console.log("Priespaskutinis buvo pataikytas: ", botMove);
+                let row = 1;
+                if (botShotList[botShotList.length - 3].hit) row++;
+                if (botShotList[botShotList.length - 4].hit) row++;
+
+                if (row>1)
+                {
+                    console.log("Pataikyti keli is eiles: ", botMove);
+                    let l1 = 2;
+                    let l2 = 3;
+
+                    if (row == 3)
+                    {
+                        l1++;
+                        l2++;
+                    }
+                    let hit_last_r = botShotList[botShotList.length - l2].row;
+                    let hit_r = botShotList[botShotList.length - l1].row;
+                    let hit_last_c = botShotList[botShotList.length - l2].col;
+                    let hit_c = botShotList[botShotList.length - l1].col;
+
+                    setCoordinates(hit_last_r,hit_last_c,hit_r,hit_c);
+
+                    if (!isShotValid(botMove[0],botMove[1]))
+                    {
                         botMove[0] = Math.floor(Math.random() * 10);
                         botMove[1] = Math.floor(Math.random() * 10);
                     }
+                    return;
                 }
-                return;
             }
-        // else
-        // {
-        //     console.log("Praeito nepataike: ", botMove);
-        //     let back = 0;
-        //     let max = 4;
-        //     if(botShotList.length < 4) max = botShotList.length -1;
-
-        //     for (let i=0; i < max; i++)
-        //     {
-        //         if(botShotList[botShotList.length - (i+1)].hit)
-        //         {
-        //             back=i+1;
-        //             break;
-        //         }
-        //     }
-        //     if (back == 2 && botShotList.length >= 4) //jei priespaskutinis buvo pataikytas
-        //     {
-        //         console.log("Priespaskutinis buvo pataikytas: ", botMove);
-        //         let row = 1;
-        //         if (botShotList[botShotList.length - 3].hit) row++;
-        //         if (botShotList[botShotList.length - 4].hit) row++;
-
-        //         if (row>1) //jei buvo pataikyti keli is eiles(ejimo krypties keitimas nepataikius)
-        //         {
-        //             console.log("Pataikyti keli is eiles: ", botMove);
-        //             let l1 = 2;
-        //             let l2 = 3;
-
-        //             if (row == 3)
-        //             {
-        //                 l1++;
-        //                 l2++;
-        //             }
-        //             let hit_last_r = botShotList[botShotList.length - l2].row;
-        //             let hit_r = botShotList[botShotList.length - l1].row;
-        //             let hit_last_c = botShotList[botShotList.length - l2].col;
-        //             let hit_c = botShotList[botShotList.length - l1].col;
-
-        //             setCoordinates(hit_last_r,hit_last_c,hit_r,hit_c);
-
-        //             if (!isShotValid(botMove[0],botMove[1]))
-        //             {
-        //                 botMove[0] = Math.floor(Math.random() * 10);
-        //                 botMove[1] = Math.floor(Math.random() * 10);
-        //             }
-        //             return;
-        //         }
-        //     }
-        //     console.log("Ne priespaskutinis buvo pataikytas: ", botMove);
-        //     shift(back);
-        //     while(!isShotValid(botMove[0],botMove[1]))
-        //     {
-        //         back++;
-        //         if (back > 4)
-        //         {
-        //             botMove[0] = Math.floor(Math.random() * 10);
-        //             botMove[1] = Math.floor(Math.random() * 10);
-        //         }
-        //         shift(back);
-        //     }
-        //     return;
-        // }
+            console.log("Ne priespaskutinis buvo pataikytas: ", botMove);
+            shift(back);
+            while(!isShotValid(botMove[0],botMove[1]))
+            {
+                back++;
+                if (back > 4)
+                {
+                    botMove[0] = Math.floor(Math.random() * 10);
+                    botMove[1] = Math.floor(Math.random() * 10);
+                }
+                shift(back);
+            }
+            return;
+        }
     }
+
     function shift(back)
     {
         switch(back) { //veikia tokiu principu: aplink pataikyta langeli kryptys yra bandomos ratu(eiles tvarka: aukstyn, desine, zemyn, kaire) tol kol pataikoma
@@ -692,14 +759,14 @@
     }
     
     //Tikrinama ar kuris nors laimėjo žaidimą
-    function checkWinCondition() {
-        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0); //Tikrinama, ar bent vienas bot'o laivas dar turi gyvybių
+        function checkWinCondition() {
+        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0); // Tikrinama, ar bent vienas boto laivas dar turi gyvybių
         let playerShipsRemaining = playerGrid.flat().includes(1); // Tikrinama, ar žaidėjas turi bent vieną laivą su gyvybėmis
 
         if (!botShipsRemaining) {
             setTimeout(() => {
                 alert("Congratulations! You won! 🎉");
-                resetGame();
+                askToPlayAgain();
             }, 500);
             return true;
         }
@@ -707,16 +774,25 @@
         if (!playerShipsRemaining) {
             setTimeout(() => {
                 alert("Game Over! The bot won! 😢");
-                resetGame();
+                askToPlayAgain();
             }, 500);
             return true;
         }
 
         return false;
     }
+    function askToPlayAgain() {
+    const playAgain = confirm("Do you want to play again?");
+        if (playAgain) {
+            resetGame();
+        } else {
+            window.location.href = "/Home/Index";
+        }
+    }
 
     //Atstatomas žaidimas
     function resetGame() {
+        window.location.reload();
         gameStarted = false;
         isPlayerTurn = true;
         placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
@@ -726,11 +802,14 @@
         botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
         botShipHealth = {};
         isShotExplosive = false;
+        moveHistory = []; // Išvalome ėjimų istoriją
+        currentMoveIndex = -1;
         document.querySelectorAll(".player-cell, .bot-cell").forEach(cell => {
             cell.style.backgroundColor = "lightblue";
             cell.innerHTML = "";
         });
         document.getElementById("confirm-btn").style.display = "block";
+        document.getElementById("go-back-btn").style.display = "none"; // Paslepiame "Go Back" mygtuką
         document.getElementById("turn-text").textContent = "Player's Turn";
     }
 
@@ -783,4 +862,32 @@
             box-shadow: var(--hover-shadow);
             color: white;
         }
+
+    .corner-cell {
+        width: 35px; 
+        height: 35px;
+        background-color: transparent;
+        border: none;
+    }
+
+    .column-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Eilučių antraštės (1-10) */
+    .row-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+    }
 </style>
