@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Game Room";
+}
+<h2>Game Room</h2>
+<p>Waiting for both players...</p>
+
+<canvas id="drawingCanvas" width="600" height="400" style="border:1px solid black;"></canvas>
+
+<script src="~/lib/signalr/signalr.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder().withUrl("/drawingHub").build();
+
+    connection.start().catch(err => console.error(err));
+
+    const canvas = document.getElementById("drawingCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let drawing = false;
+
+    canvas.addEventListener("mousedown", () => drawing = true);
+    canvas.addEventListener("mouseup", () => drawing = false);
+    canvas.addEventListener("mousemove", draw);
+
+    function draw(event) {
+        if (!drawing) return;
+
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(event.offsetX, event.offsetY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        connection.invoke("SendDrawing", event.offsetX, event.offsetY);
+    }
+
+    connection.on("ReceiveDrawing", (x, y) => {
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+</script>

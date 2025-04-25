@@ -1,0 +1,149 @@
+﻿@model WarshipBattle.ViewModels.FriendsViewModel
+
+<h2>Select a Friend to Play</h2>
+
+@if (Model?.Friends != null && Model.Friends.Any())
+{
+    <ul>
+        @foreach (var friend in Model.Friends)
+        {
+            <li>@friend.UserName <button class="invite-btn" data-friend-id="@friend.Id">Invite</button></li>
+        }
+    </ul>
+}
+else
+{
+    <p>You have no friends.</p>
+}
+
+<div id="notification"></div>
+
+<button id="deleteAllInvitations" style="background-color: red; color: white; padding: 10px; border: none; cursor: pointer;">
+    Delete All Invitations
+</button>
+
+<script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('deleteAllInvitations').addEventListener('click', async () => {
+            if (!confirm("Are you sure you want to delete all invitations?")) return;
+
+            let response = await fetch('/GameInvitation/DeleteAllInvitations', {
+                method: 'POST'
+            });
+
+            let result = await response.json();
+            alert(result.message);
+        });
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/gameHub")
+            .build();
+
+        const currentUserId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+
+        connection.on("ReceiveGameInvitation", (data) => {
+            console.log("Invitation received:", data);
+            if (data.receiverId === currentUserId) {
+                document.getElementById('notification').innerHTML = `
+                    <p>${data.message}</p>
+                    <button id="acceptInvitation">Accept Invitation</button>
+                    <button id="rejectInvitation">Reject Invitation</button>
+                `;
+
+                document.getElementById('acceptInvitation').addEventListener('click', async () => {
+                    await acceptInvitation(data.invitationId);
+                });
+
+                document.getElementById('rejectInvitation').addEventListener('click', async () => {
+                    await rejectInvitation(data.invitationId);
+                });
+            }
+        });
+
+        connection.on("JoinGameRoom", (roomId) => {
+            console.log("Joined room:", roomId);
+            document.getElementById('notification').innerText = "Joined game room " + roomId;
+            window.location.href = `/Game/PrivateRoom?roomId=${roomId}`;
+        });
+
+        connection.on("PlayerJoined", (message) => {
+            console.log(message);
+        });
+
+        connection.start().then(() => {
+            console.log("SignalR connection established");
+        }).catch(err => console.error("SignalR connection error:", err.toString()));
+
+        async function acceptInvitation(invitationId) {
+            let response = await fetch(`/GameInvitation/AcceptInvitation?invitationId=${invitationId}`, {
+                method: 'POST'
+            });
+
+            let result = await response.json();
+            document.getElementById('notification').innerText = result.message;
+
+            connection.invoke("JoinGameRoom", invitationId).catch(err => console.error(err.toString()));
+        }
+
+        async function rejectInvitation(invitationId) {
+            let response = await fetch(`/GameInvitation/RejectInvitation?invitationId=${invitationId}`, {
+                method: 'POST'
+            });
+            let result = await response.json();
+            document.getElementById('notification').innerText = result.message;
+        }
+
+        document.querySelectorAll('.invite-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                let friendId = button.getAttribute('data-friend-id');
+                console.log("Friend ID:", friendId);
+
+                try {
+                    let response = await fetch('/GameInvitation/SendInvitation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `receiverId=${friendId}`
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+
+                    let result = await response.json();
+                    document.getElementById('notification').innerText = result.message;
+
+                    connection.invoke("JoinGameRoom", result.invitationId).catch(err => console.error(err.toString()));
+                } catch (error) {
+                    console.error("Error sending invitation:", error);
+                    document.getElementById('notification').innerText = "Failed to send invitation: " + error.message;
+                }
+            });
+        });
+    });
+</script>
+
+<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
+
+<style>
+    .go_back {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: darkcyan;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+        .go_back:hover {
+            background-color: #005858;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
+</style>

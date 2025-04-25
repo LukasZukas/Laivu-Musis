@@ -1,0 +1,16 @@
+﻿@page
+@model WarshipBattle.Areas.Identity.Pages.Account.Manage.SendRequestModel
+
+@{
+    ViewData["Title"] = "Send Friend Request";
+}
+
+<h2>Send Friend Request</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Send Request</button>
+</form>

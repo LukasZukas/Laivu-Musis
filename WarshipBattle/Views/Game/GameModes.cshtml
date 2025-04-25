@@ -1,0 +1,29 @@
+﻿@* Views/Game/GameModes.cshtml *@
+<h2>Select Game Mode</h2>
+
+<a asp-controller="Game" asp-action="PlayAgainstBot" class="btn btn-primary">Play Against Bot</a>
+<a asp-controller="Game" asp-action="PlayAgainstPlayer" class="btn btn-secondary">Play Against Friend (Drawing)</a>
+<a class="go_home" asp-area="" asp-controller="Home" asp-action="Index">Go back</a>
+
+<style>
+    .go_home {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: darkcyan;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+    .go_home:hover {
+        background-color: #005858;
+        box-shadow: var(--hover-shadow);
+        color: white;
+    }
+</style>
+

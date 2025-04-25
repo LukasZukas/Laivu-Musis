@@ -1,0 +1,27 @@
+﻿@page
+@model WarshipBattle.Areas.Identity.Pages.Account.Manage.FriendsListModel
+
+@{
+    ViewData["Title"] = "Friends List";
+}
+
+<h2>Friends List</h2>
+
+@if (Model.Friends != null && Model.Friends.Any())
+{
+    <ul>
+        @foreach (var friend in Model.Friends)
+        {
+            <li>
+                @friend.UserName
+                <form method="post" asp-page-handler="RemoveFriend" asp-route-friendId="@friend.Id" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                </form>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>You have no friends yet.</p>
+}

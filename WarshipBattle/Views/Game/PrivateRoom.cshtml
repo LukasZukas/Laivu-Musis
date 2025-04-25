@@ -1,0 +1,466 @@
+﻿@model int
+
+<h2>Private Room @Model</h2>
+
+<div id="gameContainer">
+    <div id="playerBoardContainer">
+        <h3>Your Board</h3>
+        <div class="board-labels">
+            <div id="playerBoard" class="board"></div>
+        </div>
+    </div>
+    <div id="opponentBoardContainer">
+        <h3>Opponent's Board</h3>
+        <div class="board-labels">
+            <div id="opponentBoard" class="board"></div>
+        </div>
+    </div>
+</div>
+
+<div id="shipSelection">
+    <h3 id="placeShipsHeader">Place Your Ships</h3>
+    <div>
+        <button class="ship-btn" data-length="1">1x1 (4 left)</button>
+        <button class="ship-btn" data-length="2">1x2 (3 left)</button>
+        <button class="ship-btn" data-length="3">1x3 (2 left)</button>
+        <button class="ship-btn" data-length="4">1x4 (1 left)</button>
+        <button id="rotateShip" style="margin: 5px; padding: 10px; background-color: #2196F3; color: white; border: none; cursor: pointer;">Rotate Ship (Horizontal)</button>
+        <button id="randomizeShips" style="margin: 5px; padding: 10px; background-color: #FF9800; color: white; border: none; cursor: pointer;">Randomize Ships</button>
+    </div>
+    <button id="confirmPlacement" style="display: none; margin: 10px auto; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Confirm Ship Placement</button>
+</div>
+
+<div id="gameStatus">
+    <p id="turnIndicator">Waiting for opponent...</p>
+</div>
+
+<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
+
+<script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
+
+<style>
+    :root {
+        --hover-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    #gameContainer {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+    }
+
+    .board-labels {
+        position: relative;
+    }
+
+    .labels-top, .labels-left {
+        display: flex;
+    }
+
+    .labels-top {
+        margin-left: 30px;
+    }
+
+    .labels-left {
+        position: absolute;
+        top: 0;
+        left: -30px;
+        flex-direction: column;
+    }
+
+    .label {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(10, 40px);
+        grid-template-rows: repeat(10, 40px);
+        gap: 1px;
+        background-color: #ccc;
+    }
+
+    .cell {
+        width: 40px;
+        height: 40px;
+        background-color: lightgray;
+        border: 1px solid #999;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .cell.ship {
+            background-color: blue;
+        }
+
+        .cell.hit {
+            background-color: red;
+        }
+
+        .cell.miss {
+            background-color: gray;
+        }
+
+            .cell.miss::after {
+                content: 'X';
+                color: black;
+                font-size: 20px;
+                font-weight: bold;
+                position: absolute;
+            }
+
+    #shipSelection {
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .ship-btn {
+        margin: 5px;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+        .ship-btn:hover {
+            background-color: #45a049;
+        }
+
+        .ship-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+    #gameStatus {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    .go_back {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: darkcyan;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+        .go_back:hover {
+            background-color: #005858;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
+</style>
+
+<script>
+    const roomId = @Model;
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/gameHub")
+        .build();
+
+    let isPlayer1 = false;
+    let isPlayer1Turn = false;
+    let currentShipLength = null;
+    let isPlacingShips = true;
+    let isHorizontal = true;
+    let playerBoard = Array(10).fill().map(() => Array(10).fill(0));
+    let opponentBoard = Array(10).fill().map(() => Array(10).fill(0));
+    let shipsPlaced = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    const maxShips = { 1: 4, 2: 3, 3: 2, 4: 1 };
+    const totalShips = Object.values(maxShips).reduce((a, b) => a + b, 0);
+    let isRandomizing = false;
+
+    function createBoards() {
+        const playerBoardElement = document.getElementById('playerBoard');
+        const opponentBoardElement = document.getElementById('opponentBoard');
+
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < 10; j++) {
+                const playerCell = document.createElement('div');
+                playerCell.classList.add('cell');
+                playerCell.dataset.row = i;
+                playerCell.dataset.col = j;
+                playerCell.addEventListener('click', placeShip);
+                playerBoardElement.appendChild(playerCell);
+
+                const opponentCell = document.createElement('div');
+                opponentCell.classList.add('cell');
+                opponentCell.dataset.row = i;
+                opponentCell.dataset.col = j;
+                opponentBoardElement.appendChild(opponentCell);
+            }
+        }
+    }
+
+    function canPlaceShip(board, row, col, length, isHorizontal) {
+        if (isHorizontal) {
+            if (col + length > 10) return false;
+        } else {
+            if (row + length > 10) return false;
+        }
+
+        for (let i = 0; i < length; i++) {
+            const r = isHorizontal ? row : row + i;
+            const c = isHorizontal ? col + i : col;
+
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const checkRow = r + dr;
+                    const checkCol = c + dc;
+                    if (checkRow >= 0 && checkRow < 10 && checkCol >= 0 && checkCol < 10) {
+                        if (board[checkRow][checkCol] !== 0) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    function placeShip(event) {
+        if (!isPlacingShips || !currentShipLength) return;
+
+        const row = parseInt(event.target.dataset.row);
+        const col = parseInt(event.target.dataset.col);
+
+        if (shipsPlaced[currentShipLength] >= maxShips[currentShipLength]) return;
+
+        if (canPlaceShip(playerBoard, row, col, currentShipLength, isHorizontal)) {
+            if (isHorizontal) {
+                for (let i = 0; i < currentShipLength; i++) {
+                    playerBoard[row][col + i] = 1;
+                    const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col + i}"]`);
+                    cell.classList.add('ship');
+                }
+            } else {
+                for (let i = 0; i < currentShipLength; i++) {
+                    playerBoard[row + i][col] = 1;
+                    const cell = document.querySelector(`#playerBoard .cell[data-row="${row + i}"][data-col="${col}"]`);
+                    cell.classList.add('ship');
+                }
+            }
+
+            shipsPlaced[currentShipLength]++;
+            const remaining = maxShips[currentShipLength] - shipsPlaced[currentShipLength];
+            document.querySelector(`.ship-btn[data-length="${currentShipLength}"]`).innerText = `${currentShipLength}x1 (${remaining} left)`;
+            if (remaining === 0) {
+                document.querySelector(`.ship-btn[data-length="${currentShipLength}"]`).disabled = true;
+            }
+            currentShipLength = null;
+
+            const totalPlaced = Object.values(shipsPlaced).reduce((a, b) => a + b, 0);
+            if (totalPlaced === totalShips) {
+                document.getElementById('confirmPlacement').style.display = 'block';
+            }
+        } else {
+            if (!isRandomizing) {
+                alert("You can't put your ship here!");
+            }
+        }
+    }
+
+    function randomizeShips() {
+        isRandomizing = true;
+
+        playerBoard = Array(10).fill().map(() => Array(10).fill(0));
+        document.querySelectorAll('#playerBoard .cell').forEach(cell => {
+            cell.classList.remove('ship');
+        });
+        shipsPlaced = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+        const shipSizes = [
+            { length: 1, count: 4 },
+            { length: 2, count: 3 },
+            { length: 3, count: 2 },
+            { length: 4, count: 1 }
+        ];
+
+        for (const ship of shipSizes) {
+            for (let i = 0; i < ship.count; i++) {
+                let placed = false;
+                let attempts = 0;
+                const maxAttempts = 100;
+
+                while (!placed && attempts < maxAttempts) {
+                    const isHorizontal = Math.random() < 0.5;
+                    const row = Math.floor(Math.random() * 10);
+                    const col = Math.floor(Math.random() * 10);
+
+                    if (canPlaceShip(playerBoard, row, col, ship.length, isHorizontal)) {
+                        if (isHorizontal) {
+                            for (let j = 0; j < ship.length; j++) {
+                                playerBoard[row][col + j] = 1;
+                                const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col + j}"]`);
+                                cell.classList.add('ship');
+                            }
+                        } else {
+                            for (let j = 0; j < ship.length; j++) {
+                                playerBoard[row + j][col] = 1;
+                                const cell = document.querySelector(`#playerBoard .cell[data-row="${row + j}"][data-col="${col}"]`);
+                                cell.classList.add('ship');
+                            }
+                        }
+                        shipsPlaced[ship.length]++;
+                        const remaining = maxShips[ship.length] - shipsPlaced[ship.length];
+                        document.querySelector(`.ship-btn[data-length="${ship.length}"]`).innerText = `${ship.length}x1 (${remaining} left)`;
+                        if (remaining === 0) {
+                            document.querySelector(`.ship-btn[data-length="${ship.length}"]`).disabled = true;
+                        }
+                        placed = true;
+                    }
+                    attempts++;
+                }
+
+                if (!placed) {
+                    console.log("Nepavyko atsitiktinai išdėlioti laivų. Bandykite dar kartą.");
+                    isRandomizing = false;
+                    return;
+                }
+            }
+        }
+
+        const totalPlaced = Object.values(shipsPlaced).reduce((a, b) => a + b, 0);
+        if (totalPlaced === totalShips) {
+            document.getElementById('confirmPlacement').style.display = 'block';
+        }
+
+        isRandomizing = false;
+    }
+
+    function confirmPlacement() {
+        isPlacingShips = false;
+        document.getElementById('shipSelection').style.display = 'none';
+        const placeShipsHeader = document.getElementById('placeShipsHeader');
+        if (placeShipsHeader) {
+            placeShipsHeader.remove();
+        }
+        connection.invoke("FinishPlacingShips", roomId);
+    }
+    function attack(event) {
+        if (isPlacingShips) {
+            console.log("Still placing ships");
+            return;
+        }
+
+        const isMyTurn = (isPlayer1 && isPlayer1Turn) || (!isPlayer1 && !isPlayer1Turn);
+        if (!isMyTurn) {
+            console.log("Not your turn");
+            return;
+        }
+
+        const row = parseInt(event.target.dataset.row);
+        const col = parseInt(event.target.dataset.col);
+
+        console.log(`Attacking at (${row}, ${col})`);
+        connection.invoke("Attack", roomId, row, col).catch(err => console.error("Error invoking Attack:", err));
+    }
+
+    connection.start().then(() => {
+        console.log("SignalR connected");
+        connection.invoke("JoinGameRoom", roomId);
+    }).catch(err => console.error("SignalR connection error:", err.toString()));
+
+    connection.on("GameStarted", (roomId, player1) => {
+        if (typeof isPlayer1 === 'undefined') {
+            isPlayer1 = player1;
+            console.log(`Game started in room ${roomId}. You are ${isPlayer1 ? "Player 1" : "Player 2"}`);
+        } else {
+            console.log(`GameStarted signal received again for room ${roomId}, player1=${player1}, but isPlayer1 already set to ${isPlayer1}`);
+        }
+    });
+
+    connection.on("PlayerJoined", (message) => {
+        console.log(message);
+    });
+
+    connection.on("Print", (message) => {
+        console.log(message);
+    });
+
+    connection.on("GameStartedMessage", (message) => {
+        console.log("GameStartedMessage received:", message);
+        alert(message);
+    });
+
+    connection.on("OpponentLeft", (message) => {
+        alert(message);
+        window.location.href = "/Home/Index";
+    });
+
+        connection.on("BothPlayersReady", () => {
+        console.log("BothPlayersReady received");
+        isPlacingShips = false;
+        document.getElementById('shipSelection').style.display = 'none';
+        const placeShipsHeader = document.getElementById('placeShipsHeader');
+        if (placeShipsHeader) placeShipsHeader.remove();
+        document.querySelectorAll('#opponentBoard .cell').forEach(cell => {
+            cell.addEventListener('click', attack);
+        });
+    });
+
+    connection.on("UpdateTurn", (isTurn) => {
+        const isMyTurn = isTurn;
+        isPlayer1Turn = (isPlayer1 && isTurn) || (!isPlayer1 && !isTurn);
+        console.log(`Turn updated: ${isMyTurn ? "Your turn" : "Opponent's turn"}`);
+        document.getElementById('turnIndicator').innerText = isMyTurn ? "Your turn" : "Opponent's turn";
+    });
+
+    connection.on("ReceiveAttack", (row, col, hit) => {
+        console.log(`Received attack at (${row}, ${col}), hit: ${hit}`);
+        const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col}"]`);
+        if (hit) {
+            cell.classList.add('hit');
+        } else {
+            cell.classList.add('miss');
+        }
+    });
+
+    connection.on("AttackResult", (row, col, hit) => {
+        console.log(`Attack result at (${row}, ${col}): ${hit ? "Hit" : "Miss"}`);
+        opponentBoard[row][col] = hit ? 2 : 3;
+        const cell = document.querySelector(`#opponentBoard .cell[data-row="${row}"][data-col="${col}"]`);
+        if (hit) {
+            cell.classList.add('hit');
+        } else {
+            cell.classList.add('miss');
+        }
+    });
+
+    connection.on("Error", (message) => {
+        alert(message);
+    });
+
+    document.querySelectorAll('.ship-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            currentShipLength = parseInt(button.dataset.length);
+        });
+    });
+
+    document.getElementById('rotateShip').addEventListener('click', () => {
+        isHorizontal = !isHorizontal;
+        document.getElementById('rotateShip').innerText = `Rotate Ship (${isHorizontal ? "Horizontal" : "Vertical"})`;
+    });
+
+    document.getElementById('randomizeShips').addEventListener('click', randomizeShips);
+
+    document.getElementById('confirmPlacement').addEventListener('click', confirmPlacement);
+
+    createBoards();
+</script>

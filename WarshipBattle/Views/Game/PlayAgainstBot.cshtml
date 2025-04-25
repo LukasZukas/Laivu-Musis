@@ -1,0 +1,967 @@
+@* Views/Game/PlayAgainstBot.cshtml *@
+<h2>Play Against Bot</h2>
+
+<!-- Laivų pasirinkimas -->
+<div>
+    <h3>Choose a Ship</h3>
+    <button onclick="selectShip(1, 1)">🛥️ 1x1 Ship</button>
+    <button onclick="selectShip(2, 2)">⛵ 2x1 Ship</button>
+    <button onclick="selectShip(3, 3)">🚤 3x1 Ship</button>
+    <button onclick="selectShip(4, 4)">🚢 4x1 Ship</button>
+
+    <button onclick="toggleRotation()">Rotate: <span id="rotation-text">Horizontal</span></button>
+    <button onclick="randomizePlayerShips()">Randomize Ship Placement</button>
+    <button onclick="resetBoard()">Cancel Placement</button>
+    <button onclick="resetGame();">Reset game</button>
+</div>
+
+<!-- Parodoma kieno eilė -->
+<div id="turn-indicator" style="margin-top: 20px;">
+    <h3>Current Turn: <span id="turn-text">Player's Turn</span></h3>
+</div>
+<!-- paleidziami garsai suvio metu-->
+<audio id="hit-sound" src="/audio/explosion.wav" preload="auto"></audio>
+<audio id="miss-sound" src="/audio/splash.wav" preload="auto"></audio>
+
+<div style="display: flex; gap: 50px; margin-top: 20px;">
+    <!-- Žaidėjo lenta -->
+    <div>
+        <h3>Your Board (Place Ships)</h3>
+        <table id="player-board" , border-collapse: collapse; border-spacing: 0;>
+            <!-- Stulpelių antraštės (A-J) -->
+            <tr>
+                <th class="corner-cell"></th> <!-- Tuscias langelis kampe -->
+                @for (int j = 0; j < 10; j++)
+                {
+                    <th class="column-header">@((char)('A' + j))</th>
+                }
+            </tr>
+            @for (int i = 0; i < 10; i++)
+            {
+                <tr>
+                    <!-- Eilutės numeris (1-10) -->
+                    <th class="row-header">@(i + 1)</th>
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <td id="player-@i-@j" onclick="placeShip(this, @i, @j)"
+                            class="grid-cell player-cell">
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+
+    <!-- Bot lenta -->
+    <div>
+        <h3>Opponent's Board (Attack)</h3>
+        <table id="bot-board">
+            <!-- Stulpelių antraštės (A-J) -->
+            <tr>
+                <th class="corner-cell"></th> <!-- Tuščias langelis viršutiniame kairiajame kampe -->
+                @for (int j = 0; j < 10; j++)
+                {
+                    <th class="column-header">@((char)('A' + j))</th>
+                }
+            </tr>
+            @for (int i = 0; i < 10; i++)
+            {
+                <tr>
+                    <!-- Eilutės numeris (1-10) -->
+                    <th class="row-header">@(i + 1)</th>
+                    @for (int j = 0; j < 10; j++)
+                    {
+                        <td id="bot-@i-@j" onclick="attackCell(this, @i, @j)"
+                            class="grid-cell bot-cell">
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+    <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
+        <strong>Choose a Shot</strong>
+        <strong id="points-text">Points: 0</strong>
+        <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
+        <button id="linearShotBtn" onclick="choosingLinearShot()">Linear Shot (4pts)</button>
+        <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
+</div>
+<a class="go_home" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
+
+<script>
+    let selectedShip = { type: null, size: null }; // pasirinktas laivas
+    let isHorizontal = true; // ar laivas horizontalus
+    let playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0)); // žaidėjo laivų lenta
+    let botGrid = Array.from({ length: 10 }, () => Array(10).fill(0)); // Bot laivų lenta
+    let isPlayerTurn = true; // tikrinimui kieno eilė
+    let shipCounts = { 1: 4, 2: 3, 3: 2, 4: 1 }; // Laivų pasirinkimų kiekis pagal dydį
+    let placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 }; // Padėtų laivų kiekis
+    let gameStarted = false; //Ar žaidimas prasidėjo
+    let playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));  // Žaidėjo šūvių lenta
+    let botShots = Array.from({ length: 10 }, () => Array(10).fill(false));  // Bot šūvių lenta
+    let botCanShootAgain = false; // Ar bot gali dar kartą šauti
+    let botShipHealth = {}; // Bot laivų gyvybių skaičiavimui
+    let botMove = [];
+    let botShotList = [];
+    let isShotExplosive = false;
+    let isLinearShot = false;
+    let isverticalLinShot = false;
+    let shotPoints = 0;
+
+    // Atsitiktinis žaidėjo laivų išdėstymas
+    function randomizePlayerShips() {
+        resetBoard();
+        for (let size = 1; size <= 4; size++) {
+            for (let count = 0; count < shipCounts[size]; count++) {
+                let placed = false;
+                while (!placed) {
+                    let row = Math.floor(Math.random() * 10);
+                    let col = Math.floor(Math.random() * 10);
+                    let horizontal = Math.random() > 0.5;
+
+                    if (canPlaceShip(row, col, size, horizontal, playerGrid)) {
+                        let shipId = `${size}-${count}`;
+                        if (horizontal) {
+                            if (size == 1) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/1x1blue-1.png" style="width: 100%; height: 100% margin: 0;">';
+                                playerGrid[row][col] = 1;
+                            }
+                            else if (size == 2) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/2x1blue-2.png" style="width: 100%; height: 100%; margin: 0;">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row][col + 1] = 1;
+                            }
+                            else if (size == 3) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/3x1blue-2.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 2}`).innerHTML = '<img src="/images/sprites/3x1blue-3.png" style="width: 100%; height: 100%; margin: 0;">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row][col + 1] = 1;
+                                playerGrid[row][col + 2] = 1;
+                            }
+                            else if (size == 4) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/4x1blue-2.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 2}`).innerHTML = '<img src="/images/sprites/4x1blue-3.png" style="width: 100%; height: 100%; margin: 0;">';
+                                document.getElementById(`player-${row}-${col + 3}`).innerHTML = '<img src="/images/sprites/4x1blue-4.png" style="width: 100%; height: 100%; margin: 0;">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row][col + 1] = 1;
+                                playerGrid[row][col + 2] = 1;
+                                playerGrid[row][col + 3] = 1;
+                            }
+                        }
+                        else {
+                            if (size == 1) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/1x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                playerGrid[row][col] = 1;
+                            }
+                            else if (size == 2) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row + 1][col] = 1;
+                            }
+                            else if (size == 3) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 2}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-3.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row + 1][col] = 1;
+                                playerGrid[row + 2][col] = 1;
+                            }
+                            else if (size == 4) {
+                                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 2}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-3.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                document.getElementById(`player-${row + 3}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-4.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                                playerGrid[row][col] = 1;
+                                playerGrid[row + 1][col] = 1;
+                                playerGrid[row + 2][col] = 1;
+                                playerGrid[row + 3][col] = 1;
+                            }
+                        }
+                        placed = true;
+                        placedShips[size]++;
+                    }
+                }
+            }
+        }
+        // Patikrinama ar visi laivai padėti. Jei taip, atsiranda confirm mygtukas.
+        if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
+            document.getElementById("confirm-btn").style.display = "block";
+        console.log('Player ships placed:', placedShips);
+        }
+    }
+
+
+    // Norimo laivo pasirinkimas
+    function selectShip(type, size) {
+        if (placedShips[type] >= shipCounts[type]) {
+            alert(`You have already placed all ${shipCounts[type]} ships of this type.`);
+            return;
+        }
+
+        selectedShip = { type, size };
+    }
+
+    // Pasirenkama laivo rotacija
+    function toggleRotation() {
+        isHorizontal = !isHorizontal;
+        document.getElementById("rotation-text").innerText = isHorizontal ? "Horizontal" : "Vertical";
+    }
+
+    // Savarankiškai pastatomas laivas ant lentos
+    function placeShip(cell, row, col) {
+        if (!selectedShip.size) {
+            alert("Please select a ship first!");
+            return;
+        }
+
+        if (!canPlaceShip(row, col, selectedShip.size, isHorizontal, playerGrid)) {
+            alert("Invalid placement! Ships must not touch.");
+            return;
+        }
+
+        if (isHorizontal) {
+
+            if (selectedShip.size == 1) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/1x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                playerGrid[row][col] = 1;
+            }
+            else if (selectedShip.size == 2) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/2x1blue-2.png" style="width: 100%; height: 100%; margin: 0;">';
+                playerGrid[row][col] = 1;
+                playerGrid[row][col + 1] = 1;
+            }
+            else if (selectedShip.size == 3) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/3x1blue-2.png" style="width: 100%; height: 100%;; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 2}`).innerHTML = '<img src="/images/sprites/3x1blue-3.png" style="width: 100%; height: 100%; margin: 0;">';
+                playerGrid[row][col] = 1;
+                playerGrid[row][col + 1] = 1;
+                playerGrid[row][col + 2] = 1;
+            }
+            else if (selectedShip.size == 4) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 1}`).innerHTML = '<img src="/images/sprites/4x1blue-2.png" style="width: 100%; height: 100%; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 2}`).innerHTML = '<img src="/images/sprites/4x1blue-3.png" style="width: 100%; height: 100%; margin: 0;">';
+                document.getElementById(`player-${row}-${col + 3}`).innerHTML = '<img src="/images/sprites/4x1blue-4.png" style="width: 100%; height: 100%; margin: 0;">';
+                playerGrid[row][col] = 1;
+                playerGrid[row][col + 1] = 1;
+                playerGrid[row][col + 2] = 1;
+                playerGrid[row][col + 3] = 1;
+            }
+        }
+        else {
+            if (selectedShip.size == 1) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/1x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                playerGrid[row][col] = 1;
+            }
+            else if (selectedShip.size == 2) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/2x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                playerGrid[row][col] = 1;
+                playerGrid[row + 1][col] = 1;
+            }
+            else if (selectedShip.size == 3) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 2}-${col}`).innerHTML = '<img src="/images/sprites/3x1blue-3.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                playerGrid[row][col] = 1;
+                playerGrid[row + 1][col] = 1;
+                playerGrid[row + 2][col] = 1;
+            }
+            else if (selectedShip.size == 4) {
+                document.getElementById(`player-${row}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 1}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-2.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 2}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-3.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                document.getElementById(`player-${row + 3}-${col}`).innerHTML = '<img src="/images/sprites/4x1blue-4.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">';
+                playerGrid[row][col] = 1;
+                playerGrid[row + 1][col] = 1;
+                playerGrid[row + 2][col] = 1;
+                playerGrid[row + 3][col] = 1;
+            }
+        }
+
+        placedShips[selectedShip.type]++;
+
+        if (Object.keys(placedShips).every(key => placedShips[key] >= shipCounts[key])) {
+            document.getElementById("confirm-btn").style.display = "block";
+        }
+
+        selectedShip = { type: null, size: null };
+    }
+
+    // Patikrinama ar laivas gali būti padėtas
+    function canPlaceShip(row, col, size, horizontal, grid) {
+        if (horizontal && col + size > 10) return false;
+        if (!horizontal && row + size > 10) return false;
+
+        // Patikrinama ar laivai nesiliestų
+        for (let i = 0; i < size; i++) {
+            let r = horizontal ? row : row + i;
+            let c = horizontal ? col + i : col;
+
+            if (grid[r][c] !== 0) return false; // Langelis jau užimtas
+
+            // Patikrinama ar aplinkiniai langeliai (1 atstumi) nesiliečia
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && grid[nr][nc] !== 0) {
+                        return false; // Laivai liečiasi
+                    }
+                }
+            }
+        }
+
+        return true; // Laivas gali būti padėtas
+    }
+
+    // išvaloma lenta
+    function resetBoard() {
+        playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        document.querySelectorAll(".player-cell").forEach(cell => cell.innerHTML = "");
+        document.getElementById("confirm-btn").style.display = "none";
+    }
+
+    // Pradedama kova
+    function startBattle() {
+        randomizeBotShips();
+        gameStarted = true;
+        document.getElementById("confirm-btn").style.display = "none";
+        alert("The battle begins!");
+    }
+
+    // Atsitiktinai pastatomi bot-o laivai
+    function randomizeBotShips() {
+        botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botShipHealth = {};
+
+        for (let size = 1; size <= 4; size++) {
+            for (let count = 0; count < shipCounts[size]; count++) {
+                let placed = false;
+                while (!placed) {
+                    let row = Math.floor(Math.random() * 10);
+                    let col = Math.floor(Math.random() * 10);
+                    let horizontal = Math.random() > 0.5;
+
+                    if (canPlaceShip(row, col, size, horizontal, botGrid)) {
+                        let shipId = `${size}-${count}`; // Sukuriamas ID gyvybių sekimui
+                        for (let i = 0; i < size; i++) {
+                            let r = horizontal ? row : row + i;
+                            let c = horizontal ? col + i : col;
+                            botGrid[r][c] = shipId; // Pažymimas laivas unikaliu id
+                            //document.getElementById(`bot-${r}-${c}`).style.backgroundColor = "navy";
+                        }
+
+                        botShipHealth[shipId] = size;
+
+                        placed = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Atakuojama lentos koordinatė
+        function attackCell(cell, row, col) {
+        if (!gameStarted || !isPlayerTurn) return;
+
+        if (playerShots[row][col]) {
+            alert("You already guessed that spot!");
+            return;
+        }
+
+        if (isLinearShot) {
+            linearShot(row, col);
+            isLinearShot = false;
+            shotPoints -= 4;
+            updatePointsDisplay();
+            document.getElementById("verticalnessBtn").style.display = "none";
+            return;
+        }
+
+        if (isShotExplosive) {
+            explosiveShot(row, col);
+            isShotExplosive = false;
+            shotPoints -= 3;
+            updatePointsDisplay();
+            return;
+        }
+
+        playerShots[row][col] = true;
+
+        if (botGrid[row][col] !== 0) {
+            document.getElementById('hit-sound').play();
+
+            cell.style.backgroundColor = "red";
+            cell.innerHTML = "<span style='color: white;'>💥</span>";
+
+            shotPoints++;
+            updatePointsDisplay();
+
+            let shipId = botGrid[row][col];
+            botShipHealth[shipId]--;
+
+            if (botShipHealth[shipId] === 0) {
+                alert("You destroyed a bot's ship!");
+                markShipSurroundingAsMissed(row, col, shipId);
+            }
+
+            if (!checkWinCondition()) {
+                botCanShootAgain = false;
+            }
+        } else {
+            document.getElementById('miss-sound').play();
+
+            cell.style.backgroundColor = "blue";
+            cell.innerHTML = "❌";
+            isShotExplosive = false; // Atstatome, jei nepataikė
+            updateTurnDisplay("Bot's Turn");
+            isPlayerTurn = false;
+            botShoots(false);
+        }
+    }
+
+    function choosingExplosiveShot() {
+        if (shotPoints > 2) {
+            isShotExplosive = true;
+            isLinearShot = false;
+        }
+    }
+
+    function choosingLinearShot() {
+        if (shotPoints > 3) {
+            isLinearShot = true;
+            isShotExplosive = false;
+            document.getElementById("verticalnessBtn").style.display = "block";
+        }
+    }
+
+    function choosingverticalLinShot() {
+        document.getElementById("verticalnessBtn").innerText = isverticalLinShot ? "Horizontal" : "Vertical";
+        isverticalLinShot = !isverticalLinShot;
+    }
+
+    function explosiveShot(row, col) {
+        flag = false;
+
+        for (let i = row - 1; i <= row + 1; i++) {
+            for (let j = col - 1; j <= col + 1; j++) {
+                if (i >= 0 && i < 10 && j >= 0 && j < 10) {
+                    if (!playerShots[i][j]) { // Tikriname žaidėjo šūvius
+                        playerShots[i][j] = true;
+                        let surroundingCell = document.getElementById(`bot-${i}-${j}`);
+
+                        if (botGrid[i][j] !== 0) {
+                            surroundingCell.style.backgroundColor = "red";
+                            surroundingCell.innerHTML = "<span style='color: white;'>💥</span>";
+                            flag = true;
+                            let shipId = botGrid[i][j]; // Kiekvieno langelio shipId
+                            botShipHealth[shipId]--;
+
+                            if (botShipHealth[shipId] === 0) {
+                                alert("You destroyed a bot's ship with an explosive shot!");
+                                markShipSurroundingAsMissed(i, j, shipId);
+                            }
+                        } else {
+                            surroundingCell.style.backgroundColor = "blue";
+                            surroundingCell.innerHTML = "❌";
+                        }
+                    }
+                }
+            }
+        }
+        if (flag) //flag - ar bent vienoj vietoj pataike i laiva
+        document.getElementById('hit-sound').play();
+        else
+        document.getElementById('miss-sound').play();
+
+        // Pereiname prie boto eilės, jei žaidimas nesibaigė
+        if (!checkWinCondition()) {
+            updateTurnDisplay("Bot's Turn");
+            isPlayerTurn = false;
+            botShoots(false);
+        }
+    }
+
+    function linearShot(row, col) {
+        flag = false;
+        if (isverticalLinShot) {
+            for (let i = 0; i < 10; i++) {
+                playerShots[i][col] = true;
+                if (botGrid[i][col] !== 0) {
+                    flag = true;
+                    let cell = document.getElementById(`bot-${i}-${col}`);
+                    cell.style.backgroundColor = "red";
+                    cell.innerHTML = "<span style='color: white;'>💥</span>";
+                    let shipId = botGrid[i][col];
+                    botShipHealth[shipId]--;
+                    if (botShipHealth[shipId] === 0) {
+                        alert("You destroyed a bot's ship with a linear shot!");
+                        markShipSurroundingAsMissed(i, col, shipId);
+                    }
+                }
+                else {
+                    let cell = document.getElementById(`bot-${i}-${col}`);
+                    cell.style.backgroundColor = "blue";
+                    cell.innerHTML = "❌";
+                }
+            }
+        }
+        else
+        {
+            for (let j = 0; j < 10; j++) {
+                playerShots[row][j] = true;
+                if (botGrid[row][j] !== 0) {
+                    flag = true;
+                    let cell = document.getElementById(`bot-${row}-${j}`);
+                    cell.style.backgroundColor = "red";
+                    cell.innerHTML = "<span style='color: white;'>💥</span>";
+                    let shipId = botGrid[row][j];
+                    botShipHealth[shipId]--;
+                    if (botShipHealth[shipId] === 0) {
+                        alert("You destroyed a bot's ship with a linear shot!");
+                        markShipSurroundingAsMissed(row, j, shipId);
+                    }
+                }
+                else {
+                    let cell = document.getElementById(`bot-${row}-${j}`);
+                    cell.style.backgroundColor = "blue";
+                    cell.innerHTML = "❌";
+                }
+            }
+        }
+        if (flag) //flag - ar bent vienoj vietoj pataike i laiva
+        document.getElementById('hit-sound').play();
+        else
+        document.getElementById('miss-sound').play();
+
+        // Pereiname prie boto eilės, jei žaidimas nesibaigė
+        if (!checkWinCondition()) {
+            updateTurnDisplay("Bot's Turn");
+            isPlayerTurn = false;
+            botShoots(false);
+        }
+    }
+
+    // Pažymimos aplinkinės koordinatės kaip praleistos bot'o laivo, kuris yra sunaikintas
+    function markShipSurroundingAsMissed(row, col, shipId) {
+        let shipCells = [];
+
+        // Ieškomos visos koordinatės kurios priklauso sunaikintam laivui pagal jo shipID
+        for (let i = 0; i < 10; i++) {
+            for (let j = 0; j < 10; j++) {
+                    if (botGrid[i][j] === shipId) {
+                    shipCells.push({ row: i, col: j });
+                    }
+            }
+        }
+
+        // Aplinkinės laivo koordinatės pažymimos kaip nepataikytos
+        shipCells.forEach(cell => {
+            let r = cell.row;
+            let c = cell.col;
+
+            // Einama per laivo aplinkines koordinates
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && playerShots[nr][nc] === false) {
+                        let surroundingCell = document.getElementById(`bot-${nr}-${nc}`);
+                        surroundingCell.style.backgroundColor = "blue";
+                        surroundingCell.innerHTML = "❌";
+                        playerShots[nr][nc] = true;
+                        }
+                }
+            }
+        });
+    }
+     // bot šūvis
+    function botShoots(hit) {
+        setTimeout(() => {
+            if (isPlayerTurn) return;
+
+            let validShot = false;
+
+            while (!validShot) {
+                let row = Math.floor(Math.random() * 10);
+                let col = Math.floor(Math.random() * 10);
+
+                if (hit){
+                    shootNear();
+                    row = botMove[0];
+                    col = botMove[1];
+                }
+
+                if (!botShots[row][col]) {
+                    botShots[row][col] = true;
+                    let cell = document.getElementById(`player-${row}-${col}`);
+                    if (playerGrid[row][col] === 1) { //pataikė į laivą
+                        document.getElementById('hit-sound').play();
+
+                        playerGrid[row][col] = 2;
+                        cell.style.backgroundColor = "red";
+                        cell.innerHTML = "<span style='color: white;'>💥</span>";
+                        markAround(row,col);
+                        validShot = true;
+                        updateTurnDisplay("Bot's Turn");
+                        if (!checkWinCondition()) {
+                            botMove[0] = row;
+                            botMove[1] = col;
+                            botShotList.push({row: row, col: col, hit: true});
+                            botShoots(true);
+                            }
+
+                    }
+                    else if (playerGrid[row][col] === 0){
+                        document.getElementById('miss-sound').play();
+
+                        cell.style.backgroundColor = "blue";
+                        cell.innerHTML = "❌";
+                        validShot = true;
+                        botMove[0] = row;
+                        botMove[1] = col;
+                        botShotList.push({row: row, col: col, hit: false});
+                        updateTurnDisplay("Player's Turn");
+                        isPlayerTurn = true;
+                    }
+                }
+            }
+        }, Math.floor(Math.random() * 1000) + 1000);
+    }
+    function markAround(row,col)
+    {
+        for (let i=row-1; i<=row+1; i++)
+        {
+            for (let j=col-1; j<=col+1; j++)
+            {
+                if (i >= 0 && i < 10 && j >= 0 && j < 10 && botShots[i][j] === false && playerGrid[i][j]!=1)
+                {
+                    let surroundingCell = document.getElementById(`player-${i}-${j}`);
+                    //surroundingCell.innerHTML = "❌";
+                    botShots[i][j] = true;
+                }
+            }
+        }
+    }
+
+    function isShotValid(row, col)
+    {
+        return row >= 0 && row < 10 && col >= 0 && col < 10 && !botShots[row][col];
+    }
+
+    function checkNearHit(row,col,number)
+    {
+        if ((row-1)>=0)
+        {
+            if (playerGrid[row-1][col] == number) return 1;
+        }
+        if ((col+1)<=9)
+        {
+            if (playerGrid[row][col+1] == number) return 2;
+        }
+        if ((row+1)<=9)
+        {
+            if (playerGrid[row+1][col] == number) return 3;
+        }
+        if ((col-1)>=0)
+        {
+            if (playerGrid[row][col-1] == number) return 4;
+        }
+        return 0;
+    }
+    function shootNear()
+    {
+            let r1 = botShotList[botShotList.length - 1].row;
+            let c1 = botShotList[botShotList.length - 1].col;
+            if (checkNearHit(r1,c1,2) > 0)
+            {
+                console.log("Salia yra sunaikintas langelis: ", botMove);
+                        switch(checkNearHit(r1,c1,2)) {
+                            case 1:
+                                r1++;
+                                break;
+                            case 2:
+                                c1--;
+                                break;
+                            case 3:
+                                r1--;
+                                break;
+                            case 4:
+                                c1++;
+                                break;
+                            default:
+                                break;
+                        }
+                        if (!isShotValid(r1,c1))
+                        {
+                            console.log("Ejimas netinka: ", botMove);
+                            let r = botShotList[botShotList.length - 1].row;
+                            let c = botShotList[botShotList.length - 1].col;
+                            let direction = checkNearHit(r,c,2);
+
+                            while (playerGrid[r][c] == 2)
+                            {
+                                switch(direction) {
+                                    case 1:
+                                        r--;
+                                        break;
+                                    case 2:
+                                        c++;
+                                        break;
+                                    case 3:
+                                        r++;
+                                        break;
+                                    case 4:
+                                        c--;
+                                        break;
+                                    default:
+                                        break;
+                                        }
+                                    if (!(r >= 0 && r < 10 && c >= 0 && c < 10))
+                                    {
+                                        console.log("Ejimas nutrauktas: ", botMove);
+                                        botMove[0] = Math.floor(Math.random() * 10);
+                                        botMove[1] = Math.floor(Math.random() * 10);
+                                        return;
+                                    }
+                            }
+                            if (isShotValid(r,c))
+                            {
+                                console.log("Perstatymas isejo: ", botMove);
+                                botMove[0] = r;
+                                botMove[1] = c;
+                                return;
+                            }
+                            else{
+                                console.log("Perstatymas neisejo: ", botMove);
+                                botMove[0] = Math.floor(Math.random() * 10);
+                                botMove[1] = Math.floor(Math.random() * 10);
+                                return;
+                            }
+                        }
+                        else{
+                            botMove[0] = r1;
+                            botMove[1] = c1;
+                            console.log("Ejimas tinka: ", botMove);
+                            return;
+                        }
+            }
+            else{
+                console.log("Salia nera sunaikinto langelio: ", botMove);
+                if (checkNearHit(r1,c1,1) > 0)
+                {
+                    console.log("Kryptis: ", checkNearHit(r1,c1,1));
+                    switch(checkNearHit(r1,c1,1)) {
+                            case 1:
+                                r1--;
+                                break;
+                            case 2:
+                                c1++;
+                                break;
+                            case 3:
+                                r1++;
+                                break;
+                            case 4:
+                                c1--;
+                                break;
+                            default:
+                                break;
+                        }
+                        if (isShotValid(r1,c1))
+                        {
+                            botMove[0] = r1;
+                            botMove[1] = c1;
+                            console.log("Naujasis langelis tiko: ", botMove);
+                            return;
+                        }
+                        else
+                        {
+                            console.log("Naujasis langelis netiko: ", botMove);
+                            botMove[0] = Math.floor(Math.random() * 10);
+                            botMove[1] = Math.floor(Math.random() * 10);
+                            return;
+                        }
+
+                }
+                else
+                {
+                    console.log("Salia nera jokiu laivu langeliu: ", botMove);
+                    botMove[0] = Math.floor(Math.random() * 10);
+                    botMove[1] = Math.floor(Math.random() * 10);
+                    return;
+                }
+            }
+    }
+
+    function shift(back)
+    {
+        switch(back) { //veikia tokiu principu: aplink pataikyta langeli kryptys yra bandomos ratu(eiles tvarka: aukstyn, desine, zemyn, kaire) tol kol pataikoma
+                case 2:
+                    botMove[0]++;
+                    botMove[1]++;
+                    break;
+                case 3:
+                    botMove[0]++;
+                    botMove[1]--;
+                    break;
+                case 4:
+                    botMove[0]--;
+                    botMove[1]--;
+                    break;
+                default:
+                    break;
+            }
+    }
+
+    //Tikrinama ar kuris nors laimėjo žaidimą
+        function checkWinCondition() {
+        let botShipsRemaining = Object.values(botShipHealth).some(health => health > 0); // Tikrinama, ar bent vienas boto laivas dar turi gyvybių
+        let playerShipsRemaining = playerGrid.flat().includes(1); // Tikrinama, ar žaidėjas turi bent vieną laivą su gyvybėmis
+
+        if (!botShipsRemaining) {
+            setTimeout(() => {
+                alert("Congratulations! You won! 🎉");
+                askToPlayAgain();
+            }, 500);
+            return true;
+        }
+
+        if (!playerShipsRemaining) {
+            setTimeout(() => {
+                alert("Game Over! The bot won! 😢");
+                askToPlayAgain();
+            }, 500);
+            return true;
+        }
+
+        return false;
+    }
+    function askToPlayAgain() {
+    const playAgain = confirm("Do you want to play again?");
+        if (playAgain) {
+            resetGame();
+        } else {
+            window.location.href = "/Home/Index";
+        }
+    }
+
+    //Atstatomas žaidimas
+    function resetGame() {
+        window.location.reload();
+        gameStarted = false;
+        isPlayerTurn = true;
+        placedShips = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        playerShots = Array.from({ length: 10 }, () => Array(10).fill(false));
+        botShots = Array.from({ length: 10 }, () => Array(10).fill(false));
+        playerGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botGrid = Array.from({ length: 10 }, () => Array(10).fill(0));
+        botShipHealth = {};
+        isShotExplosive = false;
+        moveHistory = []; // Išvalome ėjimų istoriją
+        currentMoveIndex = -1;
+        document.querySelectorAll(".player-cell, .bot-cell").forEach(cell => {
+            cell.style.backgroundColor = "lightblue";
+            cell.innerHTML = "";
+        });
+        document.getElementById("confirm-btn").style.display = "block";
+        document.getElementById("go-back-btn").style.display = "none"; // Paslepiame "Go Back" mygtuką
+        document.getElementById("turn-text").textContent = "Player's Turn";
+    }
+
+    // Atnaujinama kieno eilė šauti
+    function updateTurnDisplay(turn) {
+        document.getElementById("turn-text").textContent = turn;
+    }
+
+    function updatePointsDisplay() {
+        document.getElementById("points-text").textContent = `Points: ${shotPoints}`;
+    }
+
+</script>
+
+
+<style>
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+
+    .grid-cell {
+        width: 35px;
+        height: 35px;
+        padding: 0;
+        line-height: 0;
+        font-size: 0;
+        border: 1px solid black;
+        background-color: lightblue;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .player-cell {
+        background-color: lightblue;
+    }
+
+    .bot-cell {
+        background-color: lightgray;
+    }
+
+    .go_home {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-color: darkcyan;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+        .go_home:hover {
+            background-color: #005858;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
+
+    .corner-cell {
+        width: 35px;
+        height: 35px;
+        background-color: transparent;
+        border: none;
+    }
+
+    .column-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Eilučių antraštės (1-10) */
+    .row-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>
