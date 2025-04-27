@@ -5,6 +5,15 @@
     ViewData["Title"] = "Friends List";
 }
 
+<h2>Send Friend Request</h2>
+<form method="post" asp-page-handler="SendRequestModel">
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Send Request</button>
+</form>
+
 <h2>Friends List</h2>
 
 @if (Model.Friends != null && Model.Friends.Any())
