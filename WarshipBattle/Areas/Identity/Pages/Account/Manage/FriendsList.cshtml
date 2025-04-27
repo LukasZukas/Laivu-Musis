@@ -1,18 +1,9 @@
-﻿@page
+@page
 @model WarshipBattle.Areas.Identity.Pages.Account.Manage.FriendsListModel
 
 @{
     ViewData["Title"] = "Friends List";
 }
-
-<h2>Send Friend Request</h2>
-<form method="post" asp-page-handler="SendRequestModel">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" id="username" name="username" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Send Request</button>
-</form>
 
 <h2>Friends List</h2>
 
@@ -34,3 +25,16 @@ else
 {
     <p>You have no friends yet.</p>
 }
+
+<h3>Send Friend Request</h3>
+@if (!string.IsNullOrEmpty(ViewData["ErrorMessage"]?.ToString()))
+{
+    <div class="alert alert-danger">@ViewData["ErrorMessage"]</div>
+}
+<form method="post" asp-page-handler="SendRequest">
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Send Request</button>
+</form>
