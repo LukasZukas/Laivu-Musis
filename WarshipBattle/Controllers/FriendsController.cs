@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarshipBattle.Data;
@@ -24,11 +24,22 @@ namespace WarshipBattle.Controllers
             var receiver = await _userManager.FindByNameAsync(username);
             if (receiver == null)
             {
-                return NotFound();
+                return NotFound("Vartotojas nerastas.");
             }
 
+            // Check if the receiver is already a friend
+            var isAlreadyFriend = await _context.Friendships
+            .AnyAsync(f => (f.User1Id == senderId && f.User2Id == receiver.Id) ||
+            (f.User1Id == receiver.Id && f.User2Id == senderId));
+
+            if (isAlreadyFriend)
+            {
+                return BadRequest("Šis vartotojas jau yra jūsų draugų sąraše.");
+            }
+
+            // Check if a friend request has already been sent
             var existingRequest = await _context.FriendRequests
-                .FirstOrDefaultAsync(fr => fr.SenderUserId == senderId && fr.ReceiverUserId == receiver.Id);
+            .FirstOrDefaultAsync(fr => fr.SenderUserId == senderId && fr.ReceiverUserId == receiver.Id);
 
             if (existingRequest != null)
             {
@@ -91,15 +102,14 @@ namespace WarshipBattle.Controllers
         {
             var userId = _userManager.GetUserId(User);
             var friends = await _context.Friendships
-                .Where(f => f.User1Id == userId || f.User2Id == userId)
-                .Select(f => new
-                {
-                    FriendId = f.User1Id == userId ? f.User2Id : f.User1Id
-                })
-                .ToListAsync();
+            .Where(f => f.User1Id == userId || f.User2Id == userId)
+            .Select(f => new
+            {
+                FriendId = f.User1Id == userId ? f.User2Id : f.User1Id
+            })
+            .ToListAsync();
 
             return Ok(friends);
         }
     }
-
 }
