@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/WarshipBattle.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" />
 
     <script>
         function toggleDarkMode() {
@@ -23,7 +24,7 @@
 
             if (savedTheme) {
                 document.documentElement.setAttribute('data-theme', savedTheme);
-            } 
+            }
             else if (systemPrefersDark) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
@@ -64,16 +65,16 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index"><span class="nav-icon">⚓</span> Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy"><span class="nav-icon">⚙️</span> Privacy</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Rules">Rules</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Rules"><span class="nav-icon">📜</span> Rules</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Leaderboard">Leaderboard</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Leaderboard"><span class="nav-icon">🏆</span> Leaderboard</a>
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />
@@ -148,6 +149,60 @@
     });
 </script>
 <style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Antraštės stilius abiem režimams */
+    .navbar {
+        background-image: url('/images/sprites/wood_background.jpg') !important;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 1 !important;
+    }
+
+    /* Poraštės stilius abiem režimams */
+    .footer {
+        background-image: url('/images/sprites/wood_background.jpg') !important;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 1 !important;
+        color: #000000 !important; /* Juodas tekstas šviesiame režime */
+    }
+
+    [data-theme="dark"] .nav-link,
+    [data-theme="dark"] .navbar-brand {
+        color: #ffffff !important; /* Baltas tekstas tamsiajame režime */
+    }
+
+    [data-theme="dark"] .footer {
+        color: #ffffff !important; /* Baltas tekstas footer'yje tamsiajame režime */
+    }
+
+        [data-theme="dark"] .footer a {
+            color: #87ceeb !important; /* Šviesiai mėlyna nuoroda footer'yje */
+        }
+
+    .nav-icon {
+        margin-right: 5px;
+    }
+
     .music {
         position: fixed;
         bottom: 70px;
@@ -161,9 +216,9 @@
         transition: background-color 0.2s;
     }
 
-    .music:hover {
-        background-color: dimgrey;
-        box-shadow: var(--hover-shadow);
-        color: white;
-    }
+        .music:hover {
+            background-color: dimgrey;
+            box-shadow: var(--hover-shadow);
+            color: white;
+        }
 </style>
