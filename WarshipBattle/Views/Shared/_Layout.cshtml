@@ -170,6 +170,12 @@
         opacity: 1 !important;
     }
 
+    /* Navigacijos nuorodų ir prekės ženklo spalva visada balta */
+    .nav-link,
+    .navbar-brand {
+        color: #ffffff !important; /* Baltas tekstas visada */
+    }
+
     /* Poraštės stilius abiem režimams */
     .footer {
         background-image: url('/images/sprites/wood_background.jpg') !important;
@@ -178,11 +184,6 @@
         background-repeat: no-repeat;
         opacity: 1 !important;
         color: #000000 !important; /* Juodas tekstas šviesiame režime */
-    }
-
-    [data-theme="dark"] .nav-link,
-    [data-theme="dark"] .navbar-brand {
-        color: #ffffff !important; /* Baltas tekstas tamsiajame režime */
     }
 
     [data-theme="dark"] .footer {
