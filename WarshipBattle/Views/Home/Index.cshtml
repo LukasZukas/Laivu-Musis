@@ -1,9 +1,31 @@
+@{
+    ViewData["Title"] = "Home Page";
+}
+
 <div class="text-center">
     <h1 class="display-4 battleship-title">⚓ Laivų mūšis</h1>
-    <a asp-controller="Game" asp-action="GameModes" class="btn btn-custom">Choose Game Mode</a>
+    <a asp-controller="Game" asp-action="GameModes" class="btn btn-custom">⚓ Choose Game Mode</a>
 </div>
 
 <style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
     .battleship-title {
         font-family: 'Special Elite', cursive;
         color: #1a2526;
@@ -33,7 +55,3 @@
             opacity: 0.9; /* Subtilus patamsinimas užvedus pelę */
         }
 </style>
-
-
-
-
