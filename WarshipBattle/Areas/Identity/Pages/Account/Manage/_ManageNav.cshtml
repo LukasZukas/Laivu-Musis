@@ -1,4 +1,4 @@
-﻿@inject SignInManager<IdentityUser> SignInManager
+@inject SignInManager<IdentityUser> SignInManager
 @{
     var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
 }
@@ -16,4 +16,18 @@
     <li class="nav-item"><a class="nav-link" asp-page="./FriendRequests">Friend Requests</a></li>
 
     <li class="nav-item"><a class="nav-link" asp-page="./FriendsList">Friends List</a></li>
+
+    <img src="/images/sprites/navy_salute.png" alt="Navy Salute" class="navy-salute" />
+
 </ul>
+
+<style>
+    .navy-salute {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 400px;
+        height: auto;
+        z-index: 1000;
+    }
+</style>
