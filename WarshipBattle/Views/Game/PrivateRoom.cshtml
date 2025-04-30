@@ -351,15 +351,22 @@
         if (placeShipsHeader) {
             placeShipsHeader.remove();
         }
-        connection.invoke("FinishPlacingShips", roomId);
+        const boardToSend = playerBoard.map(row => Array.from(row));
+        connection.invoke("FinishPlacingShips", roomId, boardToSend).catch(err => console.error("Error invoking FinishPlacingShips:", err));
     }
+
+    connection.on("ShipSunk", (message) => {
+        console.log(`ShipSunk received: ${message}`);
+        alert(message);
+    });
+
     function attack(event) {
         if (isPlacingShips) {
             console.log("Still placing ships");
             return;
         }
 
-        const isMyTurn = (isPlayer1 && isPlayer1Turn) || (!isPlayer1 && !isPlayer1Turn);
+        const isMyTurn = (isPlayer1 === isPlayer1Turn);
         if (!isMyTurn) {
             console.log("Not your turn");
             return;
@@ -378,16 +385,13 @@
     }).catch(err => console.error("SignalR connection error:", err.toString()));
 
     connection.on("GameStarted", (roomId, player1) => {
-        if (typeof isPlayer1 === 'undefined') {
-            isPlayer1 = player1;
-            console.log(`Game started in room ${roomId}. You are ${isPlayer1 ? "Player 1" : "Player 2"}`);
-        } else {
-            console.log(`GameStarted signal received again for room ${roomId}, player1=${player1}, but isPlayer1 already set to ${isPlayer1}`);
-        }
+        console.log(`Received GameStarted: roomId=${roomId}, player1=${player1}`);
+        isPlayer1 = player1;
+        console.log(`Game started in room ${roomId}. You are ${isPlayer1 ? "Player 1" : "Player 2"}`);
     });
 
     connection.on("PlayerJoined", (message) => {
-        console.log(message);
+        console.log(`[PlayerJoined] ${message}`);
     });
 
     connection.on("Print", (message) => {
@@ -404,8 +408,8 @@
         window.location.href = "/Home/Index";
     });
 
-        connection.on("BothPlayersReady", () => {
-        console.log("BothPlayersReady received");
+    connection.on("BothPlayersReady", () => {
+        console.log("BothPlayersReady received. isPlayer1Turn:", isPlayer1Turn);
         isPlacingShips = false;
         document.getElementById('shipSelection').style.display = 'none';
         const placeShipsHeader = document.getElementById('placeShipsHeader');
@@ -416,9 +420,9 @@
     });
 
     connection.on("UpdateTurn", (isTurn) => {
-        const isMyTurn = isTurn;
-        isPlayer1Turn = (isPlayer1 && isTurn) || (!isPlayer1 && !isTurn);
-        console.log(`Turn updated: ${isMyTurn ? "Your turn" : "Opponent's turn"}`);
+        isPlayer1Turn = isTurn;
+        const isMyTurn = (isPlayer1 === isPlayer1Turn);
+        console.log(`Turn updated: ${isMyTurn ? "Your turn" : "Opponent's turn"}. isPlayer1: ${isPlayer1}, isPlayer1Turn: ${isPlayer1Turn}`);
         document.getElementById('turnIndicator').innerText = isMyTurn ? "Your turn" : "Opponent's turn";
     });
 
@@ -443,8 +447,18 @@
         }
     });
 
+    connection.on("GameEnded", (message) => {
+        console.log(`GameEnded received: ${message}`);
+        alert(message);
+        window.location.href = "/Game/PlayAgainstPlayer";
+    });
+
     connection.on("Error", (message) => {
         alert(message);
+    });
+
+    connection.on("Debug", (message) => {
+        console.log("[Server Debug] " + message);
     });
 
     document.querySelectorAll('.ship-btn').forEach(button => {

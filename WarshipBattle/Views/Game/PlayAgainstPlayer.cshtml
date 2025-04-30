@@ -46,6 +46,7 @@ else
         connection.on("ReceiveGameInvitation", (data) => {
             console.log("Invitation received:", data);
             if (data.receiverId === currentUserId) {
+                console.log(`[ReceiveGameInvitation] Current user (ID: ${currentUserId}) received invitation: ${data.message}`);
                 document.getElementById('notification').innerHTML = `
                     <p>${data.message}</p>
                     <button id="acceptInvitation">Accept Invitation</button>
@@ -64,12 +65,17 @@ else
 
         connection.on("JoinGameRoom", (roomId) => {
             console.log("Joined room:", roomId);
+            console.log(`[JoinGameRoom] Redirecting to PrivateRoom with roomId: ${roomId}`);
             document.getElementById('notification').innerText = "Joined game room " + roomId;
             window.location.href = `/Game/PrivateRoom?roomId=${roomId}`;
         });
 
         connection.on("PlayerJoined", (message) => {
-            console.log(message);
+            console.log(`[PlayerJoined] ${message}`);
+        });
+
+        connection.on("Debug", (message) => {
+            console.log("[Server Debug] " + message);
         });
 
         connection.start().then(() => {

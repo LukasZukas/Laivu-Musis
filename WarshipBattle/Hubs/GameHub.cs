@@ -7,18 +7,19 @@ namespace WarshipBattle.Hubs
     public class GameHub : Hub
     {
         private static readonly ConcurrentDictionary<string, Game> Games = new ConcurrentDictionary<string, Game>();
-        //private static int count = 1;
 
         public async Task JoinGameRoom(int roomId)
         {
             var connectionId = Context.ConnectionId;
             var gameId = roomId.ToString();
-            //count++;
+
+            await Clients.Caller.SendAsync("Debug", $"ConnectionId: {connectionId} attempting to join room: {gameId}");
 
             await Groups.AddToGroupAsync(connectionId, gameId);
 
             if (!Games.TryGetValue(gameId, out var game))
             {
+                await Clients.Caller.SendAsync("Debug", $"Room {gameId} does not exist. Creating new game for Player1: {connectionId}");
                 game = new Game
                 {
                     GameId = gameId,
@@ -27,15 +28,35 @@ namespace WarshipBattle.Hubs
                 };
                 Games.TryAdd(gameId, game);
 
-                //await Clients.Caller.SendAsync("Print", "Tikrinu ar iki cia ateina - " + count);
-
                 await Clients.Client(connectionId).SendAsync("PlayerJoined", "Player 1 has joined the room.");
                 await Clients.Client(game.Player1.ConnectionId).SendAsync("GameStarted", roomId, true);
+                await Clients.Caller.SendAsync("Debug", $"Player1 (ConnectionId: {connectionId}) joined room {gameId}. Waiting for Player2...");
             }
             else
             {
+                if (game.Player1.ConnectionId == connectionId)
+                {
+                    await Clients.Caller.SendAsync("Debug", $"ConnectionId: {connectionId} is already Player1 in room {gameId}. Continuing...");
+                    await Clients.Client(connectionId).SendAsync("GameStarted", roomId, true);
+                    return;
+                }
+                if (game.Player2 != null && game.Player2.ConnectionId == connectionId)
+                {
+                    await Clients.Caller.SendAsync("Debug", $"ConnectionId: {connectionId} is already Player2 in room {gameId}. Continuing...");
+                    await Clients.Client(connectionId).SendAsync("GameStarted", roomId, false);
+                    return;
+                }
+
+                if (game.Player2 != null)
+                {
+                    await Clients.Caller.SendAsync("Debug", $"Room {gameId} is already full! ConnectionId: {connectionId} cannot join.");
+                    await Clients.Client(connectionId).SendAsync("Error", "Room is already full!");
+                    return;
+                }
+
+                await Clients.Caller.SendAsync("Debug", $"Room {gameId} exists. Assigning Player2: {connectionId}");
                 game.Player2 = new Player { ConnectionId = connectionId, Board = new int[10, 10], ShotBoard = new int[10, 10] };
-                Games.TryAdd(gameId, game);
+                Games[gameId] = game; // Atnaujiname žaidimą žodyne
 
                 await Clients.Client(game.Player2.ConnectionId).SendAsync("GameStarted", roomId, false);
 
@@ -43,20 +64,47 @@ namespace WarshipBattle.Hubs
                 await Clients.Client(game.Player2.ConnectionId).SendAsync("GameStartedMessage", "Žaidimas prasidėjo! Išdėstyk savo laivus");
 
                 await Clients.Group(gameId).SendAsync("PlayerJoined", "Player 2 has joined the room. Game starting!");
+                await Clients.Caller.SendAsync("Debug", $"Player2 (ConnectionId: {connectionId}) joined room {gameId}. Game can start!");
             }
         }
 
-        public async Task FinishPlacingShips(int roomId)
+        public async Task FinishPlacingShips(int roomId, int[][] playerBoard)
         {
             var gameId = roomId.ToString();
+            await Clients.Caller.SendAsync("Debug", $"ConnectionId: {Context.ConnectionId} finished placing ships in room: {gameId}");
+
             if (Games.TryGetValue(gameId, out var game))
             {
+                // Konvertuojame int[][] į int[,]
+                int[,] board = new int[10, 10];
+                for (int i = 0; i < 10; i++)
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        board[i, j] = playerBoard[i][j];
+                    }
+                }
+
+                // Atnaujiname žaidėjo lentą
+                if (Context.ConnectionId == game.Player1.ConnectionId)
+                {
+                    game.Player1.Board = board;
+                    await Clients.Caller.SendAsync("Debug", "Player 1 board updated with ship positions.");
+                }
+                else if (Context.ConnectionId == game.Player2.ConnectionId)
+                {
+                    game.Player2.Board = board;
+                    await Clients.Caller.SendAsync("Debug", "Player 2 board updated with ship positions.");
+                }
+
                 game.PlayersReady = (game.PlayersReady ?? 0) + 1;
+                await Clients.Caller.SendAsync("Debug", $"Room {gameId} - Players ready: {game.PlayersReady}");
 
                 if (game.PlayersReady == 2)
                 {
                     if (string.IsNullOrEmpty(game.Player1?.ConnectionId) || string.IsNullOrEmpty(game.Player2?.ConnectionId))
                     {
+                        await Clients.Caller.SendAsync("Debug", $"Error in room {gameId}: One of the players has lost connection!");
                         await Clients.Group(gameId).SendAsync("Error", "One of the players has lost connection!");
                         return;
                     }
@@ -64,44 +112,27 @@ namespace WarshipBattle.Hubs
                     await Clients.Caller.SendAsync("BothPlayersReady");
                     await Clients.OthersInGroup(gameId).SendAsync("BothPlayersReady");
 
-                    // Siunčiame pranešimus ir eiles
+                    await Clients.Group(gameId).SendAsync("Debug", $"Room {gameId} - Players ready: 2");
                     if (game.IsPlayer1Turn)
                     {
-                        // Player 1 turėtų gauti "Your turn", Player 2 – "Opponent's turn"
-                        if (Context.ConnectionId == game.Player1.ConnectionId)
-                        {
-                            await Clients.Caller.SendAsync("GameStartedMessage", "Game started! Your turn...");
-                            await Clients.OthersInGroup(gameId).SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
-                            await Clients.Caller.SendAsync("UpdateTurn", true); // Player 1
-                            await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", false); // Player 2
-                        }
-                        else
-                        {
-                            await Clients.Caller.SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
-                            await Clients.OthersInGroup(gameId).SendAsync("GameStartedMessage", "Game started! Your turn...");
-                            await Clients.Caller.SendAsync("UpdateTurn", false); // Player 2
-                            await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", true); // Player 1
-                        }
+                        await Clients.Client(game.Player1.ConnectionId).SendAsync("Debug", $"Room {gameId} - Player1 (ConnectionId: {game.Player1.ConnectionId}) - It's your turn!");
+                        await Clients.Client(game.Player2.ConnectionId).SendAsync("Debug", $"Room {gameId} - Player2 (ConnectionId: {game.Player2.ConnectionId}) - Waiting for opponent's turn.");
+                        await Clients.Client(game.Player1.ConnectionId).SendAsync("GameStartedMessage", "Game started! Your turn...");
+                        await Clients.Client(game.Player2.ConnectionId).SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
                     }
                     else
                     {
-                        // Player 2 turėtų gauti "Your turn", Player 1 – "Opponent's turn"
-                        if (Context.ConnectionId == game.Player1.ConnectionId)
-                        {
-                            await Clients.Caller.SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
-                            await Clients.OthersInGroup(gameId).SendAsync("GameStartedMessage", "Game started! Your turn...");
-                            await Clients.Caller.SendAsync("UpdateTurn", false); // Player 1
-                            await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", true); // Player 2
-                        }
-                        else
-                        {
-                            await Clients.Caller.SendAsync("GameStartedMessage", "Game started! Your turn...");
-                            await Clients.OthersInGroup(gameId).SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
-                            await Clients.Caller.SendAsync("UpdateTurn", true); // Player 2
-                            await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", false); // Player 1
-                        }
+                        await Clients.Client(game.Player2.ConnectionId).SendAsync("Debug", $"Room {gameId} - Player2 (ConnectionId: {game.Player2.ConnectionId}) - It's your turn!");
+                        await Clients.Client(game.Player1.ConnectionId).SendAsync("Debug", $"Room {gameId} - Player1 (ConnectionId: {game.Player1.ConnectionId}) - Waiting for opponent's turn.");
+                        await Clients.Client(game.Player2.ConnectionId).SendAsync("GameStartedMessage", "Game started! Your turn...");
+                        await Clients.Client(game.Player1.ConnectionId).SendAsync("GameStartedMessage", "Game started! Wait for opponent's turn...");
                     }
+                    await Clients.Group(gameId).SendAsync("UpdateTurn", game.IsPlayer1Turn);
                 }
+            }
+            else
+            {
+                await Clients.Caller.SendAsync("Debug", $"Error: Game with ID {gameId} not found!");
             }
         }
 
@@ -128,22 +159,91 @@ namespace WarshipBattle.Hubs
             if (hit)
             {
                 opponent.Board[row, col] = 2;
+
+                bool shipSunk = CheckIfShipSunk(opponent.Board, row, col);
+                if (shipSunk)
+                {
+                    await Clients.Caller.SendAsync("ShipSunk", "You have sunk an opponent's ship!");
+                    await Clients.OthersInGroup(gameId).SendAsync("ShipSunk", "Your opponent has sunk one of your ships!");
+
+                    // tikrinu, ar visi priesininko laivai sunaikinti
+                    bool allShipsSunk = CheckIfAllShipsSunk(opponent.Board);
+                    if (allShipsSunk)
+                    {
+                        // pranesimai apie zaidimo pabaiga
+                        await Clients.Caller.SendAsync("GameEnded", "Congratulations! You won! 🎉");
+                        await Clients.OthersInGroup(gameId).SendAsync("GameEnded", "Opponent destroyed all your ships! You lost the game!");
+
+                        // pasalinu zaidima is saraso
+                        Games.TryRemove(gameId, out _);
+                        return;
+                    }
+                }
             }
 
             await Clients.Caller.SendAsync("AttackResult", row, col, hit);
             await Clients.OthersInGroup(gameId).SendAsync("ReceiveAttack", row, col, hit);
 
-            game.IsPlayer1Turn = !game.IsPlayer1Turn;
-            if (Context.ConnectionId == game.Player1.ConnectionId)
+            await Clients.Caller.SendAsync("Debug", $"Before turn change - IsPlayer1Turn: {game.IsPlayer1Turn}");
+            if (!hit)
             {
-                await Clients.Caller.SendAsync("UpdateTurn", false); // Player 1
-                await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", true); // Player 2
+                game.IsPlayer1Turn = !game.IsPlayer1Turn;
+            }
+            await Clients.Caller.SendAsync("Debug", $"After turn change - IsPlayer1Turn: {game.IsPlayer1Turn}");
+
+            await Clients.Group(gameId).SendAsync("UpdateTurn", game.IsPlayer1Turn);
+        }
+
+        private bool CheckIfAllShipsSunk(int[,] board)
+        {
+            for (int row = 0; row < 10; row++)
+            {
+                for (int col = 0; col < 10; col++)
+                {
+                    if (board[row, col] == 1)
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        private bool CheckIfShipSunk(int[,] board, int hitRow, int hitCol)
+        {
+            // laivo ribos
+            int startRow = hitRow, endRow = hitRow;
+            int startCol = hitCol, endCol = hitCol;
+
+            // horizontaliai
+            for (int col = hitCol - 1; col >= 0 && (board[hitRow, col] == 1 || board[hitRow, col] == 2); col--)
+                startCol = col;
+            for (int col = hitCol + 1; col < 10 && (board[hitRow, col] == 1 || board[hitRow, col] == 2); col++)
+                endCol = col;
+
+            // vertikaliai
+            for (int row = hitRow - 1; row >= 0 && (board[row, hitCol] == 1 || board[row, hitCol] == 2); row--)
+                startRow = row;
+            for (int row = hitRow + 1; row < 10 && (board[row, hitCol] == 1 || board[row, hitCol] == 2); row++)
+                endRow = row;
+
+            // ar visi laivo langeliai pataikyti
+            bool isHorizontal = startCol != endCol;
+            if (isHorizontal)
+            {
+                for (int col = startCol; col <= endCol; col++)
+                {
+                    if (board[hitRow, col] != 2)
+                        return false;
+                }
             }
             else
             {
-                await Clients.Caller.SendAsync("UpdateTurn", true); // Player 2
-                await Clients.OthersInGroup(gameId).SendAsync("UpdateTurn", false); // Player 1
+                for (int row = startRow; row <= endRow; row++)
+                {
+                    if (board[row, hitCol] != 2)
+                        return false;
+                }
             }
+            return true;
         }
 
         public async Task LeaveRoom(int roomId)
@@ -161,6 +261,28 @@ namespace WarshipBattle.Hubs
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             await Clients.Group(gameId).SendAsync("UserLeft", "A user has left the room.");
+        }
+
+        // atsijungus zaidejui, kambarys isvalomas
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            foreach (var game in Games)
+            {
+                if (game.Value.Player1?.ConnectionId == Context.ConnectionId || game.Value.Player2?.ConnectionId == Context.ConnectionId)
+                {
+                    var gameId = game.Key;
+                    var opponent = game.Value.Player1.ConnectionId == Context.ConnectionId ? game.Value.Player2 : game.Value.Player1;
+                    if (opponent != null)
+                    {
+                        await Clients.Client(opponent.ConnectionId).SendAsync("OpponentLeft", "Your opponent has disconnected.");
+                    }
+                    Games.TryRemove(gameId, out _);
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
+                    await Clients.Group(gameId).SendAsync("UserLeft", "A user has disconnected from the room.");
+                    break;
+                }
+            }
+            await base.OnDisconnectedAsync(exception);
         }
     }
 
