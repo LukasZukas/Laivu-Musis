@@ -9,6 +9,13 @@
             <div id="playerBoard" class="board"></div>
         </div>
     </div>
+    <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
+        <strong>Choose a Shot</strong>
+        <strong id="points-text">Points: 0</strong>
+        <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
+        <button id="linearShotBtn" onclick="choosingLinearShot()">Linear Shot (4pts)</button>
+        <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
+    </div>
     <div id="opponentBoardContainer">
         <h3>Opponent's Board</h3>
         <div class="board-labels">
@@ -84,7 +91,6 @@
         display: grid;
         grid-template-columns: repeat(10, 40px);
         grid-template-rows: repeat(10, 40px);
-        gap: 1px;
         background-color: #ccc;
     }
 
