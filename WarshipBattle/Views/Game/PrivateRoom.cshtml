@@ -38,6 +38,9 @@
 
 <script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
 
+<audio id="hit-sound" src="/audio/explosion.wav" preload="auto"></audio>
+<audio id="miss-sound" src="/audio/splash.wav" preload="auto"></audio>
+
 <style>
     :root {
         --hover-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -431,8 +434,10 @@
         const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col}"]`);
         if (hit) {
             cell.classList.add('hit');
+            document.getElementById('hit-sound').play();
         } else {
             cell.classList.add('miss');
+            document.getElementById('miss-sound').play();
         }
     });
 
@@ -442,8 +447,10 @@
         const cell = document.querySelector(`#opponentBoard .cell[data-row="${row}"][data-col="${col}"]`);
         if (hit) {
             cell.classList.add('hit');
+            document.getElementById('hit-sound').play();
         } else {
             cell.classList.add('miss');
+            document.getElementById('miss-sound').play();
         }
     });
 
