@@ -194,6 +194,10 @@
     const maxShips = { 1: 4, 2: 3, 3: 2, 4: 1 };
     const totalShips = Object.values(maxShips).reduce((a, b) => a + b, 0);
     let isRandomizing = false;
+        let isShotExplosive = false;
+    let isLinearShot = false;
+    let isverticalLinShot = false;
+    let shotPoints = 10;
 
     function createBoards() {
         const playerBoardElement = document.getElementById('playerBoard');
@@ -380,12 +384,81 @@
             console.log("Not your turn");
             return;
         }
-
         const row = parseInt(event.target.dataset.row);
         const col = parseInt(event.target.dataset.col);
 
+        if (isLinearShot) {
+            linearShot(row, col);
+            isLinearShot = false;
+            shotPoints -= 4;
+            updatePointsDisplay();
+            document.getElementById("verticalnessBtn").style.display = "none";
+            return;
+        }
+
+        if (isShotExplosive) {
+            explosiveShot(row, col);
+            isShotExplosive = false;
+            shotPoints -= 3;
+            updatePointsDisplay();
+            return;
+        }
+
         console.log(`Attacking at (${row}, ${col})`);
         connection.invoke("Attack", roomId, row, col).catch(err => console.error("Error invoking Attack:", err));
+    }
+
+    function updatePointsDisplay() {
+        document.getElementById("points-text").textContent = `Points: ${shotPoints}`;
+    }
+
+    function linearShot(row, col) {
+        flag = false;
+        if (isverticalLinShot) {
+            for (let i = 0; i < 10; i++) {
+                console.log(`Attacking at (${i}, ${col})`);
+                connection.invoke("Attack", roomId, i, col).catch(err => console.error("Error invoking Attack:", err));
+            }
+        }
+        else
+        {
+            for (let i = 0; i < 10; i++) {
+                console.log(`Attacking at (${row}, ${i})`);
+                connection.invoke("Attack", roomId, row, i).catch(err => console.error("Error invoking Attack:", err));
+            }
+        }
+    }
+
+    function explosiveShot(row, col) {
+        // Attack in a 3x3 area around the target
+        for (let i = row - 1; i <= row + 1; i++) {
+            for (let j = col - 1; j <= col + 1; j++) {
+                if (i >= 0 && i < 10 && j >= 0 && j < 10) {
+                    console.log(`Attacking at (${i}, ${j})`);
+                    connection.invoke("Attack", roomId, i, j).catch(err => console.error("Error invoking Attack:", err));
+                }
+            }
+        }
+    }
+
+    function choosingExplosiveShot() {
+        if (shotPoints > 2) {
+            isShotExplosive = true;
+            isLinearShot = false;
+        }
+    }
+
+    function choosingLinearShot() {
+        if (shotPoints > 3) {
+            isLinearShot = true;
+            isShotExplosive = false;
+            document.getElementById("verticalnessBtn").style.display = "block";
+        }
+    }
+
+    function choosingverticalLinShot() {
+        document.getElementById("verticalnessBtn").innerText = isverticalLinShot ? "Horizontal" : "Vertical";
+        isverticalLinShot = !isverticalLinShot;
     }
 
     connection.start().then(() => {
@@ -454,6 +527,8 @@
         if (hit) {
             cell.classList.add('hit');
             document.getElementById('hit-sound').play();
+            shotPoints++; // Award a point for successful hit
+            updatePointsDisplay();
         } else {
             cell.classList.add('miss');
             document.getElementById('miss-sound').play();
