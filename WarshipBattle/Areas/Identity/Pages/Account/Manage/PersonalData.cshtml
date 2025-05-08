@@ -3,24 +3,101 @@
 @{
     ViewData["Title"] = "Personal Data";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
 }
 
 <h3>@ViewData["Title"]</h3>
 
 <div class="row">
     <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-        <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-        </p>
-        <form id="download-data" asp-page="DownloadPersonalData" method="post">
-            <button class="btn btn-primary" type="submit">Download</button>
-        </form>
-        <p>
-            <a id="delete" asp-page="DeletePersonalData" class="btn btn-danger">Delete</a>
-        </p>
+        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+            <p style="color: #333;">Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
+            <p style="color: #333;"><strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong></p>
+            <form id="download-data" asp-page="DownloadPersonalData" method="post">
+                <button class="btn btn-custom" type="submit">Download</button>
+            </form>
+            <p>
+                <a id="delete" asp-page="DeletePersonalData" class="btn btn-custom-danger">Delete</a>
+            </p>
+        </div>
     </div>
 </div>
+
+<style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+    /* Šviesus režimas */
+    [data-theme="light"] h3 {
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h3 {
+        color: white;
+    }
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        color: white;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-right: 10px;
+    }
+
+        .btn-custom:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom:active {
+            transform: scale(0.98);
+        }
+
+    .btn-custom-danger {
+        background-size: cover;
+        color: white;
+        background-color: darkred;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom-danger:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom-danger:active {
+            transform: scale(0.98);
+        }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

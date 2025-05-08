@@ -27,3 +27,26 @@
 @section Scripts {
     @RenderSection("Scripts", required: false)
 }
+<style>
+    /* Šviesus režimas */
+    [data-theme="light"] h1{
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h1{
+        color: white;
+    }
+
+    /* Šviesus režimas */
+    [data-theme="light"] h2 {
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h2 {
+        color: white;
+    }
+</style>
