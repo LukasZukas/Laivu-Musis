@@ -3,17 +3,74 @@
 
 @{
     ViewData["Title"] = "Log in";
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
 }
 
+<h1>@ViewData["Title"]</h1>
+<div class="row">
+    <div class="col-md-4">
+        <section>
+            <form id="account" method="post" style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+                <h2 style="color: #333; font-weight: 500;">Use a local account to log in.</h2>
+                <hr style="border-color: #ccc;" />
+                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                <div class="form-floating mb-4">
+                    <input asp-for="Input.Email" class="form-control custom-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label asp-for="Input.Email" class="form-label" style="color: #333;">Email/Username</label>
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                </div>
+                <div class="form-floating mb-4 password-container">
+                    <input asp-for="Input.Password" class="form-control custom-input" autocomplete="current-password" aria-required="true" placeholder="password" id="Input_Password" />
+                    <label asp-for="Input.Password" class="form-label" style="color: #333;">Password</label>
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('Input_Password', this)">👁</button>
+                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                </div>
+                <div class="checkbox mb-4">
+                    <label asp-for="Input.RememberMe" class="form-label" style="color: #333;">
+                        <input class="form-check-input" asp-for="Input.RememberMe" />
+                        @Html.DisplayNameFor(m => m.Input.RememberMe)
+                    </label>
+                </div>
+                <div>
+                    <button id="login-submit" type="submit" class="w-100 btn btn-custom">Log in</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+
 <style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+    /* Šviesus režimas */
+    [data-theme="light"] h1 {
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h1 {
+        color: white;
+    }
     .password-container {
         display: flex;
         align-items: center;
         position: relative;
-    }
-
-    .password-field {
-        flex: 1;
     }
 
     .toggle-password {
@@ -22,58 +79,53 @@
         border: none;
         cursor: pointer;
         font-size: 18px;
+        color: #333;
     }
 
     .form-floating {
         position: relative;
     }
-</style>
 
-<h1>@ViewData["Title"]</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <form id="account" method="post">
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email/Username</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
-                </div>
-                <div class="form-floating mb-3 password-container">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('Input_Password', this)">👁</button>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
-                </div>
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
-                        <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
-                </div>
-                <div>
-                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <!--
-                <div>
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-                -->
-            </form>
-        </section>
-    </div>
-</div>
+    .custom-input {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: border-color 0.3s;
+    }
+
+        .custom-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            outline: none;
+        }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom:active {
+            transform: scale(0.98);
+        }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
@@ -82,10 +134,10 @@
             var inputField = document.getElementById(fieldId);
             if (inputField.type === "password") {
                 inputField.type = "text";
-                button.textContent = "🙈"; // Pakeičiame ikoną
+                button.textContent = "🙈";
             } else {
                 inputField.type = "password";
-                button.textContent = "👁"; // Grąžiname ikoną
+                button.textContent = "👁";
             }
         }
     </script>

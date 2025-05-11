@@ -3,26 +3,107 @@
 
 @{
     ViewData["Title"] = "Friend Requests";
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
 }
 
-<h2>Friend Requests</h2>
+<h2>@ViewData["Title"]</h2>
 
 @if (Model.Requests != null && Model.Requests.Any())
 {
-    foreach (var request in Model.Requests)
-    {
-        <div class="request">
-            <span>@request.SenderUserName</span>
-            <form asp-page-handler="AcceptRequest" asp-route-requestId="@request.Id">
-                <button type="submit" class="btn btn-success">Accept</button>
-            </form>
-            <form asp-page-handler="DeclineRequest" asp-route-requestId="@request.Id">
-                <button type="submit" class="btn btn-danger">Decline</button>
-            </form>
-        </div>
-    }
+    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+        @foreach (var request in Model.Requests)
+        {
+            <div class="request d-flex align-items-center mb-3 p-2" style="background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                <span class="flex-grow-1" style="color: #333; font-weight: 500;">@request.SenderUserName</span>
+                <form asp-page-handler="AcceptRequest" asp-route-requestId="@request.Id" class="d-inline me-2">
+                    <button type="submit" class="btn btn-custom btn-sm">Accept</button>
+                </form>
+                <form asp-page-handler="DeclineRequest" asp-route-requestId="@request.Id" class="d-inline">
+                    <button type="submit" class="btn btn-custom-danger btn-sm">Decline</button>
+                </form>
+            </div>
+        }
+    </div>
 }
 else
 {
-    <p>No friend requests.</p>
+    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+        <p style="color: #333;">No friend requests.</p>
+    </div>
 }
+
+<style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+    /* Šviesus režimas */
+    [data-theme="light"] h2 {
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h2 {
+        color: white;
+    }
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom:active {
+            transform: scale(0.98);
+        }
+
+    .btn-custom-danger {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        color: #ff4d4d;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom-danger:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+            color: #ff3333;
+        }
+
+        .btn-custom-danger:active {
+            transform: scale(0.98);
+        }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>

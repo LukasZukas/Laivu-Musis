@@ -3,37 +3,133 @@
 
 @{
     ViewData["Title"] = "Friends List";
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
 }
 
 <h2>Send Friend Request</h2>
 @if (!string.IsNullOrEmpty(ViewData["ErrorMessage"]?.ToString()))
 {
-    <div class="alert alert-danger">@ViewData["ErrorMessage"]</div>
+    <div class="alert alert-danger" style="background-color: rgba(255, 255, 255, 0.95); color: #dc3545; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">@ViewData["ErrorMessage"]</div>
 }
-<form method="post" asp-page-handler="SendRequest">
-    <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" class="form-control" id="username" name="username" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Send Request</button>
-</form>
+<div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd; margin-bottom: 30px;">
+    <form method="post" asp-page-handler="SendRequest">
+        <div class="form-group mb-4">
+            <label for="username" style="color: #333; font-weight: 500;">Username</label>
+            <input type="text" class="form-control custom-input" id="username" name="username" required />
+        </div>
+        <button type="submit" class="btn btn-custom w-100">Send Request</button>
+    </form>
+</div>
 
 <h2>Friends List</h2>
 @if (Model.Friends != null && Model.Friends.Any())
 {
-    <ul>
-        @foreach (var friend in Model.Friends)
-        {
-            <li>
-                @friend.UserName
-                <form method="post" asp-page-handler="RemoveFriend" asp-route-friendId="@friend.Id" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                </form>
-            </li>
-        }
-    </ul>
+    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+        <ul style="list-style: none; padding: 0;">
+            @foreach (var friend in Model.Friends)
+            {
+                <li class="d-flex align-items-center mb-3 p-2" style="background-color: rgba(230, 230, 230, 0.95); border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                    <span class="flex-grow-1" style="color: #333; font-weight: 500;">@friend.UserName</span>
+                    <form method="post" asp-page-handler="RemoveFriend" asp-route-friendId="@friend.Id" style="display:inline;">
+                        <button type="submit" class="btn btn-custom-danger btn-sm">Remove</button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </div>
 }
 else
 {
-    <p>You have no friends yet.</p>
+    <div style="background-color: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 15px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); border: 1px solid #ddd;">
+        <p style="color: #333;">You have no friends yet.</p>
+    </div>
 }
+
+<style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/warship_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+    /* Šviesus režimas */
+    [data-theme="light"] h2 {
+        color: black;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] h2 {
+        color: white;
+    }
+    .custom-input {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: border-color 0.3s;
+    }
+
+        .custom-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            outline: none;
+        }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom:active {
+            transform: scale(0.98);
+        }
+
+    .btn-custom-danger {
+        background-size: cover;
+        color: white;
+        background-color: darkred;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-custom-danger:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-custom-danger:active {
+            transform: scale(0.98);
+        }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>

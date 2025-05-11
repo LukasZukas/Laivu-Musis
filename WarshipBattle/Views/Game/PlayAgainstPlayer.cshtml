@@ -1,26 +1,33 @@
 ﻿@model WarshipBattle.ViewModels.FriendsViewModel
 
-<h2>Select a Friend to Play</h2>
+<div class="text-center">
+    <h2 class="battleship-title">⚓ Select a Friend to Play</h2>
 
-@if (Model?.Friends != null && Model.Friends.Any())
-{
-    <ul>
-        @foreach (var friend in Model.Friends)
-        {
-            <li>@friend.UserName <button class="invite-btn" data-friend-id="@friend.Id">Invite</button></li>
-        }
-    </ul>
-}
-else
-{
-    <p>You have no friends.</p>
-}
+    @if (Model?.Friends != null && Model.Friends.Any())
+    {
+        <div class="friend-list">
+            @foreach (var friend in Model.Friends)
+            {
+                <div class="friend-card">
+                    <span class="friend-name">
+                        <span class="ship-icon">🚢</span> @friend.UserName
+                    </span>
+                    <button class="btn btn-custom invite-btn" data-friend-id="@friend.Id">Invite</button>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="no-friends">You have no friends to challenge. 😔</p>
+    }
 
-<div id="notification"></div>
+    <div id="notification" class="notification"></div>
 
-<button id="deleteAllInvitations" style="background-color: red; color: white; padding: 10px; border: none; cursor: pointer;">
-    Delete All Invitations
-</button>
+    <button id="deleteAllInvitations" class="btn btn-custom btn-delete">Delete All Invitations</button>
+
+    <a class="btn btn-custom go-back" asp-area="" asp-controller="Game" asp-action="GameModes">Go Back</a>
+</div>
 
 <script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
 
@@ -49,8 +56,8 @@ else
                 console.log(`[ReceiveGameInvitation] Current user (ID: ${currentUserId}) received invitation: ${data.message}`);
                 document.getElementById('notification').innerHTML = `
                     <p>${data.message}</p>
-                    <button id="acceptInvitation">Accept Invitation</button>
-                    <button id="rejectInvitation">Reject Invitation</button>
+                    <button id="acceptInvitation" class="btn btn-custom">Accept Invitation</button>
+                    <button id="rejectInvitation" class="btn btn-custom btn-reject">Reject Invitation</button>
                 `;
 
                 document.getElementById('acceptInvitation').addEventListener('click', async () => {
@@ -130,26 +137,143 @@ else
     });
 </script>
 
-<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
-
 <style>
-    .go_back {
-        position: fixed;
-        bottom: 70px;
-        left: 10px;
-        background-color: darkcyan;
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/playAgainstFriend.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/playAgainstFriend.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    .battleship-title {
+        font-family: 'Special Elite', cursive;
+        color: #1a2526;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        margin-bottom: 30px;
+    }
+
+    [data-theme="dark"] .battleship-title {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         color: white;
         padding: 10px 20px;
         border: none;
-        cursor: pointer;
         border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s, transform 0.1s;
+        margin: 5px;
+        cursor: pointer;
         text-decoration: none;
-        transition: background-color 0.2s;
     }
 
-        .go_back:hover {
-            background-color: #005858;
-            box-shadow: var(--hover-shadow);
-            color: white;
+        .btn-custom:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
         }
+
+    .btn-delete {
+        background-image: none;
+        background-color: #a30000;
+    }
+
+    .btn-reject {
+        background-image: none;
+        background-color: #a30000;
+    }
+
+    .friend-list {
+        max-width: 500px;
+        margin: 0 auto 30px;
+        padding: 0;
+    }
+
+    .friend-card {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .friend-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+    [data-theme="dark"] .friend-card {
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+    }
+
+        [data-theme="dark"] .friend-card:hover {
+            box-shadow: 0 6px 12px rgba(255, 255, 255, 0.2);
+        }
+
+    .friend-name {
+        font-family: 'Arial', sans-serif;
+        font-size: 18px;
+        color: #1a2526;
+        display: flex;
+        align-items: center;
+    }
+
+    [data-theme="dark"] .friend-name {
+        color: #ffffff;
+    }
+
+    .ship-icon {
+        margin-right: 10px;
+        font-size: 20px;
+    }
+
+    .no-friends {
+        font-family: 'Arial', sans-serif;
+        color: #1a2526;
+        margin: 20px 0;
+        font-size: 18px;
+    }
+
+    [data-theme="dark"] .no-friends {
+        color: #ffffff;
+    }
+
+    .notification {
+        margin: 20px 0;
+        font-family: 'Arial', sans-serif;
+        color: #1a2526;
+        font-size: 16px;
+    }
+
+    [data-theme="dark"] .notification {
+        color: #ffffff;
+    }
+
+    .go-back {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
 </style>

@@ -1,29 +1,71 @@
 ﻿@* Views/Game/GameModes.cshtml *@
-<h2>Select Game Mode</h2>
-
-<a asp-controller="Game" asp-action="PlayAgainstBot" class="btn btn-primary">Play Against Bot</a>
-<a asp-controller="Game" asp-action="PlayAgainstPlayer" class="btn btn-secondary">Play Against Friend</a>
-<a class="go_home" asp-area="" asp-controller="Home" asp-action="Index">Go back</a>
+<div class="text-center">
+    <h2 class="battleship-title">⚓ Select Game Mode</h2>
+    <div class="button-group">
+        <a asp-controller="Game" asp-action="PlayAgainstBot" class="btn btn-custom">Play Against Bot</a>
+        <a asp-controller="Game" asp-action="PlayAgainstPlayer" class="btn btn-custom">Play Against Friend</a>
+        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
+    </div>
+</div>
 
 <style>
-    .go_home {
-        position: fixed;
-        bottom: 70px;
-        left: 10px;
-        background-color: darkcyan;
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/game_modes.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/game_modes.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    .battleship-title {
+        font-family: 'Special Elite', cursive;
+        color: #1a2526;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .battleship-title {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
         color: white;
         padding: 10px 20px;
         border: none;
-        cursor: pointer;
         border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s;
+        margin: 10px;
         text-decoration: none;
-        transition: background-color 0.2s;
+        display: inline-block;
     }
 
-    .go_home:hover {
-        background-color: #005858;
-        box-shadow: var(--hover-shadow);
-        color: white;
+        .btn-custom:hover {
+            opacity: 0.9;
+        }
+
+    .button-group {
+        margin-top: 20px;
+    }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
     }
 </style>
-

@@ -1,36 +1,32 @@
 @* Views/Game/PlayAgainstBot.cshtml *@
-<h2>Play Against Bot</h2>
+<h2 class="battleship-title">⚓ Play Against Bot</h2>
 
 <!-- Laivų pasirinkimas -->
 <div>
-    <h3>Choose a Ship</h3>
-    <button onclick="selectShip(1, 1)">🛥️ 1x1 Ship</button>
-    <button onclick="selectShip(2, 2)">⛵ 2x1 Ship</button>
-    <button onclick="selectShip(3, 3)">🚤 3x1 Ship</button>
-    <button onclick="selectShip(4, 4)">🚢 4x1 Ship</button>
+    <h3 class="text">Choose a Ship</h3>
+    <button class="btn-ships" onclick="selectShip(1, 1)">🛥️ 1x1 Ship</button>
+    <button class="btn-ships" onclick="selectShip(2, 2)">⛵ 2x1 Ship</button>
+    <button class="btn-ships" onclick="selectShip(3, 3)">🚤 3x1 Ship</button>
+    <button class="btn-ships" onclick="selectShip(4, 4)">🚢 4x1 Ship</button>
 
-    <button onclick="toggleRotation()">Rotate: <span id="rotation-text">Horizontal</span></button>
-    <button onclick="randomizePlayerShips()">Randomize Ship Placement</button>
-    <button onclick="resetBoard()">Cancel Placement</button>
-    <button onclick="resetGame();">Reset game</button>
+    <button class="btn-ships" onclick="toggleRotation()">Rotate: <span id="rotation-text">Horizontal</span></button>
+    <button class="btn-ships" onclick="randomizePlayerShips()">Randomize Ship Placement</button>
+    <button class="btn-ships" onclick="resetBoard()">Cancel Placement</button>
+    <button class="btn-ships" onclick="resetGame();">Reset game</button>
 </div>
 
-<!-- Parodoma kieno eilė -->
-<div id="turn-indicator" style="margin-top: 20px;">
-    <h3>Current Turn: <span id="turn-text">Player's Turn</span></h3>
-</div>
 <!-- paleidziami garsai suvio metu-->
 <audio id="hit-sound" src="/audio/explosion.wav" preload="auto"></audio>
 <audio id="miss-sound" src="/audio/splash.wav" preload="auto"></audio>
 
 <div style="display: flex; gap: 50px; margin-top: 20px;">
     <!-- Žaidėjo lenta -->
-    <div>
-        <h3>Your Board (Place Ships)</h3>
-        <table id="player-board" , border-collapse: collapse; border-spacing: 0;>
+    <div style="text-align: center;">
+        <h3 class="black-text-white-outline">Your Board</h3>
+        <table id="player-board">
             <!-- Stulpelių antraštės (A-J) -->
             <tr>
-                <th class="corner-cell"></th> <!-- Tuscias langelis kampe -->
+                <th class="corner-cell"></th>
                 @for (int j = 0; j < 10; j++)
                 {
                     <th class="column-header">@((char)('A' + j))</th>
@@ -53,12 +49,12 @@
     </div>
 
     <!-- Bot lenta -->
-    <div>
-        <h3>Opponent's Board (Attack)</h3>
+    <div style="text-align: center;">
+        <h3 class="black-text-white-outline">Opponent's Board</h3>
         <table id="bot-board">
             <!-- Stulpelių antraštės (A-J) -->
             <tr>
-                <th class="corner-cell"></th> <!-- Tuščias langelis viršutiniame kairiajame kampe -->
+                <th class="corner-cell"></th>
                 @for (int j = 0; j < 10; j++)
                 {
                     <th class="column-header">@((char)('A' + j))</th>
@@ -79,7 +75,8 @@
             }
         </table>
     </div>
-    <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
+
+    <div id="shot-Menu" style="width: 200px; margin-top: 50px; margin-left: 30px; background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ccc; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); padding: 15px; color: white;">
         <strong>Choose a Shot</strong>
         <strong id="points-text">Points: 0</strong>
         <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
@@ -87,11 +84,15 @@
         <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
     </div>
 </div>
+<!-- Parodoma kieno eilė -->
+<div id="turn-indicator" style="margin-top: 20px; text-align: center;">
+    <h3><span id="turn-text">Player's Turn</span></h3>
+</div>
 
 <div style="margin-top: 20px;">
-    <button id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
+    <button class="btn-ships" id="confirm-btn" style="display: none;" onclick="startBattle()">Confirm Ship Placement</button>
 </div>
-<a class="go_home" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
+<a class="btn btn-custom go-back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
 
 <script>
     let selectedShip = { type: null, size: null }; // pasirinktas laivas
@@ -892,9 +893,50 @@
 
 
 <style>
+    body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+        width: 100%;
+    }
+
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+    }
+
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
     table {
-        border-collapse: collapse;
+        border-collapse: separate; /* Pakeičiame iš collapse į separate, kad veiktų border-radius */
         border-spacing: 0;
+    }
+
+    #player-board {
+        background-image: url('/images/sprites/table1.jpg');
+        background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        overflow: hidden; /* Užtikrina, kad kampai būtų gražūs */
+    }
+
+    #bot-board {
+        background-image: url('/images/sprites/table2.jpg');
+        background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        overflow: hidden; /* Užtikrina, kad kampai būtų gražūs */
     }
 
     .grid-cell {
@@ -904,44 +946,24 @@
         line-height: 0;
         font-size: 0;
         border: 1px solid black;
-        background-color: lightblue;
+        background-color: transparent;
         cursor: pointer;
         overflow: hidden;
     }
 
     .player-cell {
-        background-color: lightblue;
+        background-color: transparent;
     }
 
     .bot-cell {
-        background-color: lightgray;
+        background-color: transparent;
     }
-
-    .go_home {
-        position: fixed;
-        bottom: 70px;
-        left: 10px;
-        background-color: darkcyan;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: background-color 0.2s;
-    }
-
-        .go_home:hover {
-            background-color: #005858;
-            box-shadow: var(--hover-shadow);
-            color: white;
-        }
 
     .corner-cell {
         width: 35px;
         height: 35px;
-        background-color: transparent;
-        border: none;
+        background-color: #f0f0f0;
+        border: 1px solid black;
     }
 
     .column-header {
@@ -952,9 +974,9 @@
         font-weight: bold;
         text-align: center;
         vertical-align: middle;
+        color: #333; /* Šviesus režimas */
     }
 
-    /* Eilučių antraštės (1-10) */
     .row-header {
         width: 35px;
         height: 35px;
@@ -963,5 +985,123 @@
         font-weight: bold;
         text-align: center;
         vertical-align: middle;
+        color: #333; /* Šviesus režimas */
+    }
+
+    [data-theme="dark"] .column-header,
+    [data-theme="dark"] .row-header {
+        background-color: #333; /* Tamsus fonas tamsiame režime */
+        color: #fff; /* Šviesus tekstas tamsiame režime */
+    }
+
+    [data-theme="dark"] .corner-cell {
+        background-color: #333; /* Tamsus fonas tamsiame režime */
+    }
+
+    .btn-custom {
+        position: fixed;
+        bottom: 70px;
+        left: 10px;
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s, transform 0.1s;
+        margin: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .btn-custom:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+    .btn-ships {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        color: #333;
+        padding: 10px 10px;
+        border: none;
+        margin: 5px;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+        .btn-ships:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+    #shot-Menu {
+        width: 200px;
+        margin-top: 50px;
+        margin-left: 30px;
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        color: white;
+        position: relative;
+    }
+
+        #shot-Menu strong {
+            display: block;
+            margin-bottom: 10px;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #shot-Menu button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            #shot-Menu button:hover {
+                background-color: #45a049;
+            }
+
+    .battleship-title {
+        font-family: 'Special Elite', cursive;
+        color: #1a2526;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        text-align: center;
+    }
+
+    [data-theme="dark"] .battleship-title {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+    h3 {
+        color: black;
+    }
+
+    [data-theme="dark"] h3 {
+        color: #ffffff;
+    }
+
+    .black-text-white-outline {
+        color: #1a2526;
+        text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+        font-family: 'Special Elite', cursive;
+    }
+
+    [data-theme="dark"] .black-text-white-outline {
+        color: #ffffff;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     }
 </style>

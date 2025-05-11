@@ -1,14 +1,23 @@
 ﻿@model int
 
-<h2>Private Room @Model</h2>
+<div class="text-center">
+    <h2 class="battleship-title">⚓ Private Room @Model</h2>
 
-<div id="gameContainer">
-    <div id="playerBoardContainer">
-        <h3>Your Board</h3>
-        <div class="board-labels">
-            <div id="playerBoard" class="board"></div>
+    <!-- Laivų pasirinkimo mygtukai virš lentelių -->
+    <div id="shipSelection">
+        <h3>
+            <span class="ship-icon">🚢</span> Place Your Ships
+        </h3>
+        <div>
+            <button class="btn btn-ships ship-btn" data-length="1">🛥️ 1x1 Ship</button>
+            <button class="btn btn-ships ship-btn" data-length="2">⛵ 2x1 Ship</button>
+            <button class="btn btn-ships ship-btn" data-length="3">🚤 3x1 Ship</button>
+            <button class="btn btn-ships ship-btn" data-length="4">🚢 4x1 Ship</button>
+            <button class="btn btn-ships" id="rotateShip">Rotate Ship (Horizontal)</button>
+            <button class="btn btn-ships" id="randomizeShips">Randomize Ships</button>
         </div>
     </div>
+<<<<<<< HEAD
     <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
         <strong>Choose a Shot</strong>
         <strong id="my-points-text">Your Points: 10</strong>
@@ -23,82 +32,275 @@
         </div>
     </div>
 </div>
+=======
+>>>>>>> 8045c44f1804d07f6b455400bf3c32c70e505486
 
-<div id="shipSelection">
-    <h3 id="placeShipsHeader">Place Your Ships</h3>
+    @if (true)
+    {
+        <div id="gameContainer" style="display: flex; gap: 50px; margin-top: 20px;">
+            <div id="playerBoardContainer">
+                <h3 class="black-text-white-outline">Your Board</h3>
+                <div class="board-container">
+                    <div class="board-labels">
+                        <div class="corner-cell"></div>
+                        @for (int j = 0; j < 10; j++)
+                        {
+                            <div class="column-header">@((char)('A' + j))</div>
+                        }
+                    </div>
+                    <div class="board-row">
+                        <div class="row-labels">
+                            @for (int i = 0; i < 10; i++)
+                            {
+                                <div class="row-header">@(i + 1)</div>
+                            }
+                        </div>
+                        <div id="playerBoard" class="board"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="opponentBoardContainer">
+                <h3 class="black-text-white-outline">Opponent's Board</h3>
+                <div class="board-container">
+                    <div class="board-labels">
+                        <div class="corner-cell"></div>
+                        @for (int j = 0; j < 10; j++)
+                        {
+                            <div class="column-header">@((char)('A' + j))</div>
+                        }
+                    </div>
+                    <div class="board-row">
+                        <div class="row-labels">
+                            @for (int i = 0; i < 10; i++)
+                            {
+                                <div class="row-header">@(i + 1)</div>
+                            }
+                        </div>
+                        <div id="opponentBoard" class="board"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="shot-Menu" style="width: 200px; margin-top: 50px; margin-left: 30px; background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ccc; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); padding: 15px; color: white;">
+                <strong>Choose a Shot</strong>
+                <strong id="points-text">Points: 0</strong>
+                <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
+                <button id="linearShotBtn" onclick="choosingLinearShot()">Linear Shot (4pts)</button>
+                <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="no-friends">Waiting for opponent...</p>
+    }
+
     <div>
-        <button class="ship-btn" data-length="1">1x1 (4 left)</button>
-        <button class="ship-btn" data-length="2">1x2 (3 left)</button>
-        <button class="ship-btn" data-length="3">1x3 (2 left)</button>
-        <button class="ship-btn" data-length="4">1x4 (1 left)</button>
-        <button id="rotateShip" style="margin: 5px; padding: 10px; background-color: #2196F3; color: white; border: none; cursor: pointer;">Rotate Ship (Horizontal)</button>
-        <button id="randomizeShips" style="margin: 5px; padding: 10px; background-color: #FF9800; color: white; border: none; cursor: pointer;">Randomize Ships</button>
+        <button class="btn btn-ships" id="confirmPlacement" style="display: none;">Confirm Ship Placement</button>
     </div>
-    <button id="confirmPlacement" style="display: none; margin: 10px auto; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Confirm Ship Placement</button>
+
+    <div id="notification" class="notification"></div>
+
+    <div id="gameStatus" class="notification">
+        <p class="no-friends" id="turnIndicator">Waiting for opponent...</p>
+    </div>
+
+    <a class="btn btn-custom go-back" asp-area="" asp-controller="Game" asp-action="GameModes">Go Back</a>
 </div>
-
-<div id="gameStatus">
-    <p id="turnIndicator">Waiting for opponent...</p>
-</div>
-
-<a class="go_back" asp-area="" asp-controller="Game" asp-action="GameModes">Go back</a>
-
-<script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
 
 <audio id="hit-sound" src="/audio/explosion.wav" preload="auto"></audio>
 <audio id="miss-sound" src="/audio/splash.wav" preload="auto"></audio>
 
+<script src="@Url.Content("https://cdn.jsdelivr.net/npm/@microsoft/signalr@3.1.0/dist/browser/signalr.js")"></script>
+
 <style>
-    :root {
-        --hover-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+        width: 100%;
     }
+
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/background_gameplay.jpg');
+    }
+
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/background_gameplay.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    .battleship-title {
+        font-family: 'Special Elite', cursive;
+        color: #1a2526;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        margin-bottom: 30px;
+    }
+
+    [data-theme="dark"] .battleship-title {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    .black-text-white-outline {
+        color: #1a2526;
+        text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+        font-family: 'Special Elite', cursive;
+    }
+
+    [data-theme="dark"] .black-text-white-outline {
+        color: #ffffff;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s, transform 0.1s;
+        margin: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .btn-custom:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+    .btn-ships {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        color: #333;
+        padding: 10px 10px;
+        border: none;
+        margin: 5px;
+        cursor: pointer;
+        transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+        .btn-ships:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
 
     #gameContainer {
         display: flex;
-        justify-content: space-around;
+        align-items: stretch;
         margin-top: 20px;
+        max-width: none;
+        gap: 50px;
+    }
+
+    .friend-name {
+        font-family: 'Special Elite', cursive;
+        font-size: 18px;
+        color: #1a2526;
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    [data-theme="dark"] .friend-name {
+        color: #ffffff;
+    }
+
+    .ship-icon {
+        margin-right: 10px;
+        font-size: 20px;
+    }
+
+    .no-friends {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        color: black;
+        font-size: 25px;
+        padding-top: 20px;
+    }
+
+    [data-theme="dark"] .no-friends {
+        color: #ffffff;
+    }
+
+    .go-back {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
     }
 
     .board-labels {
-        position: relative;
-    }
-
-    .labels-top, .labels-left {
         display: flex;
     }
 
-    .labels-top {
-        margin-left: 30px;
+    .board-row {
+        display: flex;
     }
 
-    .labels-left {
-        position: absolute;
-        top: 0;
-        left: -30px;
+    .row-labels {
+        display: flex;
         flex-direction: column;
     }
 
-    .label {
-        width: 40px;
-        height: 40px;
+    .corner-cell {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+    }
+
+    .column-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
     }
 
-    .board {
-        display: grid;
-        grid-template-columns: repeat(10, 40px);
-        grid-template-rows: repeat(10, 40px);
-        background-color: #ccc;
+    .row-header {
+        width: 35px;
+        height: 35px;
+        background-color: #f0f0f0;
+        border: 1px solid black;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    [data-theme="dark"] .column-header,
+    [data-theme="dark"] .row-header,
+    [data-theme="dark"] .corner-cell {
+        background-color: #333;
+    }
+
+    #opponentBoard {
+        background-image: url('/images/sprites/table2.jpg');
     }
 
     .cell {
-        width: 40px;
-        height: 40px;
-        background-color: lightgray;
-        border: 1px solid #999;
+        width: 35px;
+        height: 35px;
+        background-color: transparent;
+        border: 1px solid black;
         cursor: pointer;
         position: relative;
         display: flex;
@@ -126,55 +328,64 @@
                 position: absolute;
             }
 
-    #shipSelection {
-        margin: 20px 0;
-        text-align: center;
-    }
-
-    .ship-btn {
-        margin: 5px;
-        padding: 10px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-
-        .ship-btn:hover {
-            background-color: #45a049;
+        .cell img {
+            pointer-events: none;
         }
 
-        .ship-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+    #shot-Menu {
+        width: 200px;
+        margin-top: 50px;
+        margin-left: 30px;
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        color: white;
+        position: relative;
+        height: 380px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+        #shot-Menu strong {
+            display: block;
+            margin-bottom: 10px;
+            font-family: 'Arial', sans-serif;
         }
 
-    #gameStatus {
-        text-align: center;
-        margin: 20px 0;
-        font-size: 1.2em;
-        font-weight: bold;
-    }
-
-    .go_back {
-        position: fixed;
-        bottom: 70px;
-        left: 10px;
-        background-color: darkcyan;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        border-radius: 5px;
-        text-decoration: none;
-        transition: background-color 0.2s;
-    }
-
-        .go_back:hover {
-            background-color: #005858;
-            box-shadow: var(--hover-shadow);
+        #shot-Menu button {
+            width: 100%;
+            background-color: #4CAF50;
             color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
+
+            #shot-Menu button:hover {
+                background-color: #45a049;
+            }
+
+    .board-container {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(10, 35px);
+        grid-template-rows: repeat(10, 35px);
+        background-image: url('/images/sprites/table1.jpg');
+        background-size: 100% 100%;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
 </style>
 
 <script>
@@ -366,7 +577,12 @@
             placeShipsHeader.remove();
         }
         const boardToSend = playerBoard.map(row => Array.from(row));
-        connection.invoke("FinishPlacingShips", roomId, boardToSend).catch(err => console.error("Error invoking FinishPlacingShips:", err));
+        connection.invoke("FinishPlacingShips", roomId, boardToSend)
+            .then(() => {
+                // Paslepiame mygtuką po sėkmingo patvirtinimo
+                document.getElementById('confirmPlacement').style.display = 'none';
+            })
+            .catch(err => console.error("Error invoking FinishPlacingShips:", err));
     }
 
     connection.on("ShipSunk", (message) => {
