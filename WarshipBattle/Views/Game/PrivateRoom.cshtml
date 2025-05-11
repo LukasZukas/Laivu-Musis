@@ -17,23 +17,6 @@
             <button class="btn btn-ships" id="randomizeShips">Randomize Ships</button>
         </div>
     </div>
-<<<<<<< HEAD
-    <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
-        <strong>Choose a Shot</strong>
-        <strong id="my-points-text">Your Points: 10</strong>
-        <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
-        <button id="linearShotBtn" onclick="choosingLinearShot()">Linear Shot (4pts)</button>
-        <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
-    </div>
-    <div id="opponentBoardContainer">
-        <h3>Opponent's Board</h3>
-        <div class="board-labels">
-            <div id="opponentBoard" class="board"></div>
-        </div>
-    </div>
-</div>
-=======
->>>>>>> 8045c44f1804d07f6b455400bf3c32c70e505486
 
     @if (true)
     {
@@ -408,7 +391,7 @@
     let isShotExplosive = false;
     let isLinearShot = false;
     let isverticalLinShot = false;
-    let myPoints = 10; // Starting points for this player
+    let myPoints = 0; // Starting points for this player
     let isSpecialShotInProgress = false;
 
     function createBoards() {
@@ -627,7 +610,7 @@
     }
 
     function updatePointsDisplay() {
-        document.getElementById("my-points-text").textContent = `Your Points: ${myPoints}`;
+        document.getElementById("points-text").textContent = `Your Points: ${myPoints}`;
     }
 
     function linearShot(row, col) {
