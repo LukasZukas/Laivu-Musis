@@ -11,7 +11,7 @@
     </div>
     <div id="shot-Menu" style="width: 200px;margin-top: 50px; margin-left: 30px">
         <strong>Choose a Shot</strong>
-        <strong id="points-text">Points: 0</strong>
+        <strong id="my-points-text">Your Points: 10</strong>
         <button id="explosiveShotBtn" onclick="choosingExplosiveShot()">Explosive Shot (3pts)</button>
         <button id="linearShotBtn" onclick="choosingLinearShot()">Linear Shot (4pts)</button>
         <button id="verticalnessBtn" style="display: none;" onclick="choosingverticalLinShot()">Horizontal</button>
@@ -194,10 +194,11 @@
     const maxShips = { 1: 4, 2: 3, 3: 2, 4: 1 };
     const totalShips = Object.values(maxShips).reduce((a, b) => a + b, 0);
     let isRandomizing = false;
-        let isShotExplosive = false;
+    let isShotExplosive = false;
     let isLinearShot = false;
     let isverticalLinShot = false;
-    let shotPoints = 10;
+    let myPoints = 10; // Starting points for this player
+    let isSpecialShotInProgress = false;
 
     function createBoards() {
         const playerBoardElement = document.getElementById('playerBoard');
@@ -390,47 +391,60 @@
         if (isLinearShot) {
             linearShot(row, col);
             isLinearShot = false;
-            shotPoints -= 4;
+            isverticalLinShot = false;
+            myPoints -= 4;
             updatePointsDisplay();
             document.getElementById("verticalnessBtn").style.display = "none";
             return;
         }
-
-        if (isShotExplosive) {
+        else if (isShotExplosive) {
             explosiveShot(row, col);
             isShotExplosive = false;
-            shotPoints -= 3;
+            myPoints -= 3;
             updatePointsDisplay();
             return;
         }
-
-        console.log(`Attacking at (${row}, ${col})`);
-        connection.invoke("Attack", roomId, row, col).catch(err => console.error("Error invoking Attack:", err));
+        else {
+            console.log(`Attacking at (${row}, ${col})`);
+            connection.invoke("Attack", roomId, row, col).catch(err => console.error("Error invoking Attack:", err));
+        }
     }
 
     function updatePointsDisplay() {
-        document.getElementById("points-text").textContent = `Points: ${shotPoints}`;
+        document.getElementById("my-points-text").textContent = `Your Points: ${myPoints}`;
     }
 
     function linearShot(row, col) {
-        flag = false;
+        isSpecialShotInProgress = true;
         if (isverticalLinShot) {
             for (let i = 0; i < 10; i++) {
                 console.log(`Attacking at (${i}, ${col})`);
                 connection.invoke("Attack", roomId, i, col).catch(err => console.error("Error invoking Attack:", err));
             }
         }
-        else
-        {
+        else {
             for (let i = 0; i < 10; i++) {
                 console.log(`Attacking at (${row}, ${i})`);
                 connection.invoke("Attack", roomId, row, i).catch(err => console.error("Error invoking Attack:", err));
             }
         }
+        document.getElementById("verticalnessBtn").style.display = "none";
+        document.getElementById("verticalnessBtn").innerText = "Horizontal";
+        
+        // End turn after linear shot
+        isPlayer1Turn = false;
+        connection.invoke("UpdateTurn", roomId, isPlayer1Turn).catch(err => console.error("Error updating turn:", err));
+        document.getElementById('turnIndicator').innerText = "Opponent's turn";
+        
+        // Reset after small delay to ensure all attacks are processed
+        setTimeout(() => {
+            isSpecialShotInProgress = false;
+            isLinearShot = false;
+        }, 1000);
     }
 
     function explosiveShot(row, col) {
-        // Attack in a 3x3 area around the target
+        isSpecialShotInProgress = true;
         for (let i = row - 1; i <= row + 1; i++) {
             for (let j = col - 1; j <= col + 1; j++) {
                 if (i >= 0 && i < 10 && j >= 0 && j < 10) {
@@ -439,20 +453,35 @@
                 }
             }
         }
+        
+        // End turn after explosive shot
+        isPlayer1Turn = false;
+        connection.invoke("UpdateTurn", roomId, isPlayer1Turn).catch(err => console.error("Error updating turn:", err));
+        document.getElementById('turnIndicator').innerText = "Opponent's turn";
+        
+        // Reset after small delay to ensure all attacks are processed
+        setTimeout(() => {
+            isSpecialShotInProgress = false;
+            isShotExplosive = false;
+        }, 1000);
     }
 
     function choosingExplosiveShot() {
-        if (shotPoints > 2) {
+        if (myPoints >= 3) { 
             isShotExplosive = true;
             isLinearShot = false;
+        } else {
+            alert("Not enough points for Explosive Shot!");
         }
     }
 
     function choosingLinearShot() {
-        if (shotPoints > 3) {
+        if (myPoints >= 4) { 
             isLinearShot = true;
             isShotExplosive = false;
             document.getElementById("verticalnessBtn").style.display = "block";
+        } else {
+            alert("Not enough points for Linear Shot!");
         }
     }
 
@@ -526,9 +555,12 @@
         const cell = document.querySelector(`#opponentBoard .cell[data-row="${row}"][data-col="${col}"]`);
         if (hit) {
             cell.classList.add('hit');
-            document.getElementById('hit-sound').play();
-            shotPoints++; // Award a point for successful hit
-            updatePointsDisplay();
+            document.getElementById('hit-sound').play();            
+            // Only add points for regular shots that hit
+            if (!isSpecialShotInProgress) {
+                myPoints += 1;
+                updatePointsDisplay();
+            }
         } else {
             cell.classList.add('miss');
             document.getElementById('miss-sound').play();
