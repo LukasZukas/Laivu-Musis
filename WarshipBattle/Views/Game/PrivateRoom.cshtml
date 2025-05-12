@@ -1,4 +1,4 @@
-﻿@model int
+@model int
 
 <div class="text-center">
     <h2 class="battleship-title">⚓ Private Room @Model</h2>
@@ -629,12 +629,12 @@
         }
         document.getElementById("verticalnessBtn").style.display = "none";
         document.getElementById("verticalnessBtn").innerText = "Horizontal";
-        
+
         // End turn after linear shot
         isPlayer1Turn = false;
         connection.invoke("UpdateTurn", roomId, isPlayer1Turn).catch(err => console.error("Error updating turn:", err));
         document.getElementById('turnIndicator').innerText = "Opponent's turn";
-        
+
         // Reset after small delay to ensure all attacks are processed
         setTimeout(() => {
             isSpecialShotInProgress = false;
@@ -652,12 +652,12 @@
                 }
             }
         }
-        
+
         // End turn after explosive shot
         isPlayer1Turn = false;
         connection.invoke("UpdateTurn", roomId, isPlayer1Turn).catch(err => console.error("Error updating turn:", err));
         document.getElementById('turnIndicator').innerText = "Opponent's turn";
-        
+
         // Reset after small delay to ensure all attacks are processed
         setTimeout(() => {
             isSpecialShotInProgress = false;
@@ -666,7 +666,7 @@
     }
 
     function choosingExplosiveShot() {
-        if (myPoints >= 3) { 
+        if (myPoints >= 3) {
             isShotExplosive = true;
             isLinearShot = false;
         } else {
@@ -675,7 +675,7 @@
     }
 
     function choosingLinearShot() {
-        if (myPoints >= 4) { 
+        if (myPoints >= 4) {
             isLinearShot = true;
             isShotExplosive = false;
             document.getElementById("verticalnessBtn").style.display = "block";
@@ -754,7 +754,7 @@
         const cell = document.querySelector(`#opponentBoard .cell[data-row="${row}"][data-col="${col}"]`);
         if (hit) {
             cell.classList.add('hit');
-            document.getElementById('hit-sound').play();            
+            document.getElementById('hit-sound').play();
             // Only add points for regular shots that hit
             if (!isSpecialShotInProgress) {
                 myPoints += 1;
@@ -766,9 +766,24 @@
         }
     });
 
-    connection.on("GameEnded", (message) => {
-        console.log(`GameEnded received: ${message}`);
+    connection.on("GameEnded", async (message, winnerId) => {
+        console.log(`GameEnded received: ${message}, WinnerId: ${winnerId}`);
         alert(message);
+
+        const currentUserId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+        if (winnerId && winnerId === currentUserId) {
+            try {
+                const response = await fetch(`/Game/RecordVictory?roomId=${roomId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                const result = await response.json();
+                console.log("Victory recorded:", result);
+            } catch (error) {
+                console.error("Error recording victory:", error);
+            }
+        }
+
         window.location.href = "/Game/PlayAgainstPlayer";
     });
 
