@@ -1,0 +1,94 @@
+@model List<(string Username, int Victories)>
+
+<style>
+    .leaderboard-container {
+        max-width: 600px;
+        margin: 40px auto;
+        font-family: Arial, sans-serif;
+        text-align: center;
+    }
+
+    .leaderboard-title {
+        font-size: 36px;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .leaderboard-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .leaderboard-item {
+        font-size: 24px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+
+        .leaderboard-item:hover {
+            background-color: #e6f3ff;
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+    .rank {
+        font-weight: bold;
+        color: #2980b9;
+        min-width: 50px;
+    }
+
+    .username {
+        flex-grow: 1;
+        text-align: left;
+        color: #34495e;
+    }
+
+    .victories {
+        font-weight: bold;
+        color: #27ae60;
+        min-width: 100px;
+        text-align: right;
+    }
+
+    .no-data {
+        font-size: 18px;
+        color: #7f8c8d;
+        margin-top: 20px;
+    }
+</style>
+
+<div class="leaderboard-container">
+    <h1 class="leaderboard-title">Warship Leaders 🏆</h1>
+    @if (Model == null || Model.Count == 0)
+    {
+        <p class="no-data">No leaderboard data available.</p>
+    }
+    else
+    {
+        <ul class="leaderboard-list">
+            @for (int i = 0; i < Model.Count && i < 10; i++)
+            {
+                <li class="leaderboard-item">
+                    <span class="rank">@(i + 1)</span>
+                    <span class="username">@Model[i].Username</span>
+                    <span class="victories">@Model[i].Victories @(Model[i].Victories == 1 ? "victory" : "victories")</span>
+                </li>
+            }
+        </ul>
+    }
+</div>
