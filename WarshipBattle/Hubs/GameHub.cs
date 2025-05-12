@@ -1,5 +1,5 @@
-﻿using AspNetCoreGeneratedDocument;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Http;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -8,6 +8,12 @@ namespace WarshipBattle.Hubs
     public class GameHub : Hub
     {
         private static readonly ConcurrentDictionary<string, Game> Games = new ConcurrentDictionary<string, Game>();
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public GameHub(IHttpContextAccessor httpContextAccessor)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
 
         public async Task JoinGameRoom(int roomId)
         {
@@ -24,7 +30,7 @@ namespace WarshipBattle.Hubs
                 game = new Game
                 {
                     GameId = gameId,
-                    Player1 = new Player { ConnectionId = connectionId, Board = new int[10, 10], ShotBoard = new int[10, 10] },
+                    Player1 = new Player { ConnectionId = connectionId, UserId = _httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, Board = new int[10, 10], ShotBoard = new int[10, 10] },
                     IsPlayer1Turn = true
                 };
                 Games.TryAdd(gameId, game);
@@ -56,7 +62,7 @@ namespace WarshipBattle.Hubs
                 }
 
                 await Clients.Caller.SendAsync("Debug", $"Room {gameId} exists. Assigning Player2: {connectionId}");
-                game.Player2 = new Player { ConnectionId = connectionId, Board = new int[10, 10], ShotBoard = new int[10, 10] };
+                game.Player2 = new Player { ConnectionId = connectionId, UserId = _httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, Board = new int[10, 10], ShotBoard = new int[10, 10] };
                 Games[gameId] = game; // Atnaujiname žaidimą žodyne
 
                 await Clients.Client(game.Player2.ConnectionId).SendAsync("GameStarted", roomId, false);
@@ -167,15 +173,18 @@ namespace WarshipBattle.Hubs
                     await Clients.Caller.SendAsync("ShipSunk", "You have sunk an opponent's ship!");
                     await Clients.OthersInGroup(gameId).SendAsync("ShipSunk", "Your opponent has sunk one of your ships!");
 
-                    // tikrinu, ar visi priesininko laivai sunaikinti
+                    // Tikriname, ar visi priešininko laivai sunaikinti
                     bool allShipsSunk = CheckIfAllShipsSunk(opponent.Board);
                     if (allShipsSunk)
                     {
-                        // pranesimai apie zaidimo pabaiga
-                        await Clients.Caller.SendAsync("GameEnded", "Congratulations! You won! 🎉");
-                        await Clients.OthersInGroup(gameId).SendAsync("GameEnded", "Opponent destroyed all your ships! You lost the game!");
+                        string winnerId = attacker.UserId; // Naudojame UserId kaip nugalėtojo ID
+                        string winnerMessage = "Congratulations! You won! 🎉";
+                        string loserMessage = "Opponent destroyed all your ships! You lost the game!";
 
-                        // pasalinu zaidima is saraso
+                        await Clients.Caller.SendAsync("GameEnded", winnerMessage, winnerId);
+                        await Clients.OthersInGroup(gameId).SendAsync("GameEnded", loserMessage, null);
+
+                        // Pašaliname žaidimą iš sąrašo
                         Games.TryRemove(gameId, out _);
                         return;
                     }
@@ -210,23 +219,23 @@ namespace WarshipBattle.Hubs
 
         private bool CheckIfShipSunk(int[,] board, int hitRow, int hitCol)
         {
-            // laivo ribos
+            // Laivo ribos
             int startRow = hitRow, endRow = hitRow;
             int startCol = hitCol, endCol = hitCol;
 
-            // horizontaliai
+            // Horizontaliai
             for (int col = hitCol - 1; col >= 0 && (board[hitRow, col] == 1 || board[hitRow, col] == 2); col--)
                 startCol = col;
             for (int col = hitCol + 1; col < 10 && (board[hitRow, col] == 1 || board[hitRow, col] == 2); col++)
                 endCol = col;
 
-            // vertikaliai
+            // Vertikaliai
             for (int row = hitRow - 1; row >= 0 && (board[row, hitCol] == 1 || board[row, hitCol] == 2); row--)
                 startRow = row;
             for (int row = hitRow + 1; row < 10 && (board[row, hitCol] == 1 || board[row, hitCol] == 2); row++)
                 endRow = row;
 
-            // ar visi laivo langeliai pataikyti
+            // Ar visi laivo langeliai pataikyti
             bool isHorizontal = startCol != endCol;
             if (isHorizontal)
             {
@@ -264,7 +273,7 @@ namespace WarshipBattle.Hubs
             await Clients.Group(gameId).SendAsync("UserLeft", "A user has left the room.");
         }
 
-        // atsijungus zaidejui, kambarys isvalomas
+        // Atsijungus žaidėjui, kambarys išvalomas
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             foreach (var game in Games)
@@ -299,6 +308,7 @@ namespace WarshipBattle.Hubs
     public class Player
     {
         public string ConnectionId { get; set; }
+        public string UserId { get; set; }
         public int[,] Board { get; set; }
         public int[,] ShotBoard { get; set; }
     }
