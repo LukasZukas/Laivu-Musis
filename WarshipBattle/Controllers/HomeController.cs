@@ -28,7 +28,7 @@ public class HomeController : Controller
     }
     public IActionResult Leaderboard()
     {
-        return View();
+        return RedirectToAction("LeaderBoard", "GameContoller");
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
