@@ -1,79 +1,7 @@
 @model List<(string Username, int Victories)>
 
-<style>
-    .leaderboard-container {
-        max-width: 600px;
-        margin: 40px auto;
-        font-family: Arial, sans-serif;
-        text-align: center;
-    }
-
-    .leaderboard-title {
-        font-size: 36px;
-        color: #2c3e50;
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .leaderboard-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .leaderboard-item {
-        font-size: 24px;
-        padding: 15px;
-        background-color: #f9f9f9;
-        border-bottom: 1px solid #ddd;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: background-color 0.2s;
-    }
-
-        .leaderboard-item:hover {
-            background-color: #e6f3ff;
-        }
-
-        .leaderboard-item:last-child {
-            border-bottom: none;
-        }
-
-    .rank {
-        font-weight: bold;
-        color: #2980b9;
-        min-width: 50px;
-    }
-
-    .username {
-        flex-grow: 1;
-        text-align: left;
-        color: #34495e;
-    }
-
-    .victories {
-        font-weight: bold;
-        color: #27ae60;
-        min-width: 100px;
-        text-align: right;
-    }
-
-    .no-data {
-        font-size: 18px;
-        color: #7f8c8d;
-        margin-top: 20px;
-    }
-</style>
-
-<div class="leaderboard-container">
-    <h1 class="leaderboard-title">Warship Leaders 🏆</h1>
+<div class="text-center">
+    <h2 class="battleship-title">⚓ Leaderboard</h2>
     @if (Model == null || Model.Count == 0)
     {
         <p class="no-data">No leaderboard data available.</p>
@@ -84,11 +12,148 @@
             @for (int i = 0; i < Model.Count && i < 10; i++)
             {
                 <li class="leaderboard-item">
-                    <span class="rank">@(i + 1)</span>
+                    <span class="rank rank-@(i + 1)">@(i + 1)</span>
                     <span class="username">@Model[i].Username</span>
                     <span class="victories">@Model[i].Victories @(Model[i].Victories == 1 ? "victory" : "victories")</span>
                 </li>
             }
         </ul>
     }
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-custom go-home">Go Back</a>
 </div>
+
+<style>
+    /* Šviesus režimas */
+    [data-theme="light"] body {
+        background-image: url('/images/sprites/game_modes.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    /* Tamsus režimas */
+    [data-theme="dark"] body {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/sprites/game_modes.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        min-height: 100vh;
+    }
+
+    .battleship-title {
+        font-family: 'Special Elite', cursive;
+        color: #1a2526;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .battleship-title {
+        color: #ffffff;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3);
+    }
+
+    .leaderboard-list {
+        list-style: none;
+        padding: 0;
+        margin: 20px auto;
+        width: 80%;
+        max-width: 600px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .leaderboard-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        font-size: 20px; /* Didesnis šriftas visiems elementams */
+    }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .leaderboard-item:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .leaderboard-item:hover {
+            background-color: #ddd;
+        }
+
+    .rank {
+        font-weight: bold;
+        width: 10%;
+        text-align: center;
+        color: #000; /* Numatytoji spalva – juoda */
+    }
+
+    /* Auksinis numeris 1-ai vietai */
+    .rank-1 {
+        color: #FFD700; /* Auksinė spalva */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Sidabrinis numeris 2-ai vietai */
+    .rank-2 {
+        color: #C0C0C0; /* Sidabrinė spalva */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Bronzinis numeris 3-iai vietai */
+    .rank-3 {
+        color: #CD7F32; /* Bronzinė spalva */
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .username {
+        flex: 1;
+        text-align: left;
+    }
+
+    .victories {
+        width: 30%;
+        text-align: right;
+        color: #28a745; /* Žalia spalva pergalių tekstui */
+    }
+
+    .no-data {
+        font-family: Arial, sans-serif;
+        font-size: 18px;
+        color: #333;
+    }
+
+    [data-theme="dark"] .no-data {
+        color: #ffffff;
+    }
+
+    .btn-custom {
+        background-image: url('/images/sprites/wood_background.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        transition: opacity 0.2s;
+        margin: 10px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+        .btn-custom:hover {
+            opacity: 0.9;
+        }
+
+    .go-home {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>
