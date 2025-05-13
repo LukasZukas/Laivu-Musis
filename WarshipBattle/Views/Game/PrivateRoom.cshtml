@@ -1,4 +1,4 @@
-@model int
+﻿@model int
 
 <div class="text-center">
     <h2 class="battleship-title">⚓ Private Room @Model</h2>
@@ -455,13 +455,23 @@
                 for (let i = 0; i < currentShipLength; i++) {
                     playerBoard[row][col + i] = 1;
                     const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col + i}"]`);
-                    cell.classList.add('ship');
+                    if (i === 0) {
+                        cell.innerHTML = `<img src="/images/sprites/${currentShipLength}x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">`;
+                    }
+                    else {
+                        cell.innerHTML = `<img src="/images/sprites/${currentShipLength}x1blue-${i + 1}.png" style="width: 100%; height: 100%; margin: 0;">`;
+                    }
                 }
             } else {
                 for (let i = 0; i < currentShipLength; i++) {
                     playerBoard[row + i][col] = 1;
                     const cell = document.querySelector(`#playerBoard .cell[data-row="${row + i}"][data-col="${col}"]`);
-                    cell.classList.add('ship');
+                    if (i === 0) {
+                        cell.innerHTML = `<img src="/images/sprites/${currentShipLength}x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">`;
+                    }
+                    else {
+                        cell.innerHTML = `<img src="/images/sprites/${currentShipLength}x1blue-${i + 1}.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">`;
+                    }
                 }
             }
 
@@ -487,9 +497,10 @@
     function randomizeShips() {
         isRandomizing = true;
 
+        // Reset the player board and ship placements
         playerBoard = Array(10).fill().map(() => Array(10).fill(0));
         document.querySelectorAll('#playerBoard .cell').forEach(cell => {
-            cell.classList.remove('ship');
+            cell.innerHTML = ""; // Clear any existing images
         });
         shipsPlaced = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
@@ -503,10 +514,8 @@
         for (const ship of shipSizes) {
             for (let i = 0; i < ship.count; i++) {
                 let placed = false;
-                let attempts = 0;
-                const maxAttempts = 100;
 
-                while (!placed && attempts < maxAttempts) {
+                while (!placed) {
                     const isHorizontal = Math.random() < 0.5;
                     const row = Math.floor(Math.random() * 10);
                     const col = Math.floor(Math.random() * 10);
@@ -516,30 +525,29 @@
                             for (let j = 0; j < ship.length; j++) {
                                 playerBoard[row][col + j] = 1;
                                 const cell = document.querySelector(`#playerBoard .cell[data-row="${row}"][data-col="${col + j}"]`);
-                                cell.classList.add('ship');
+                                if (j === 0) {
+                                    cell.innerHTML = `<img src="/images/sprites/${ship.length}x1blue-1.png" style="width: 100%; height: 100%; margin: 0;">`;
+                                }
+                                else {
+                                    cell.innerHTML = `<img src="/images/sprites/${ship.length}x1blue-${j + 1}.png" style="width: 100%; height: 100%; margin: 0;">`;
+                                }
                             }
                         } else {
                             for (let j = 0; j < ship.length; j++) {
                                 playerBoard[row + j][col] = 1;
                                 const cell = document.querySelector(`#playerBoard .cell[data-row="${row + j}"][data-col="${col}"]`);
-                                cell.classList.add('ship');
+                                if (j === 0) {
+                                    cell.innerHTML = `<img src="/images/sprites/${ship.length}x1blue-1.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">`;
+                                }
+                                else {
+                                    cell.innerHTML = `<img src="/images/sprites/${ship.length}x1blue-${j + 1}.png" style="width: 100%; height: 100%; margin: 0; transform: rotate(90deg);">`;
+                                }
                             }
                         }
+
                         shipsPlaced[ship.length]++;
-                        const remaining = maxShips[ship.length] - shipsPlaced[ship.length];
-                        document.querySelector(`.ship-btn[data-length="${ship.length}"]`).innerText = `${ship.length}x1 (${remaining} left)`;
-                        if (remaining === 0) {
-                            document.querySelector(`.ship-btn[data-length="${ship.length}"]`).disabled = true;
-                        }
                         placed = true;
                     }
-                    attempts++;
-                }
-
-                if (!placed) {
-                    console.log("Nepavyko atsitiktinai išdėlioti laivų. Bandykite dar kartą.");
-                    isRandomizing = false;
-                    return;
                 }
             }
         }
